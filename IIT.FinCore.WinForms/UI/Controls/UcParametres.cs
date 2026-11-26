@@ -70,6 +70,98 @@ public class UcParametres : UserControl
         tabProfil.Controls.Add(cardProfil);
         tabs.TabPages.Add(tabProfil);
 
+        // Onglet Notifications & Alertes (accessible à tous les utilisateurs)
+        var tabNotif = new TabPage("Notifications & Alertes") { BackColor = Theme.PageBg, Padding = new Padding(12) };
+        var cardNotif = Theme.CreateCardPanel();
+        cardNotif.Dock = DockStyle.Fill;
+
+        var notifService = new NotificationService();
+        var prefs = notifService.GetPreferences();
+        int ny = 20;
+
+        cardNotif.Controls.Add(new Label
+        {
+            Text = "Préférences du Centre de Notifications",
+            Font = Theme.FontSection,
+            ForeColor = Theme.TextPrimary,
+            Location = new Point(22, ny),
+            AutoSize = true
+        });
+        ny += 38;
+
+        var chkToast = new CheckBox
+        {
+            Text = "Afficher les popups Toast discrets (en bas à droite) lors des nouvelles alertes",
+            Font = Theme.FontBody,
+            ForeColor = Theme.TextPrimary,
+            Checked = prefs.ToastEnabled,
+            Location = new Point(22, ny),
+            AutoSize = true
+        };
+        ny += 32;
+
+        var chkSound = new CheckBox
+        {
+            Text = "Jouer un son discret Windows lors des alertes critiques (dépassement budget / solde bas)",
+            Font = Theme.FontBody,
+            ForeColor = Theme.TextPrimary,
+            Checked = prefs.SoundEnabled,
+            Location = new Point(22, ny),
+            AutoSize = true
+        };
+        ny += 42;
+
+        cardNotif.Controls.Add(new Label
+        {
+            Text = "Seuil d'alerte de solde bas par compte (en FCFA)",
+            Font = Theme.FontBodyBold,
+            ForeColor = Theme.TextMuted,
+            Location = new Point(22, ny),
+            AutoSize = true
+        });
+        ny += 24;
+
+        var txtThreshold = new TextBox
+        {
+            Text = ((long)prefs.LowBalanceThreshold).ToString(),
+            Bounds = new Rectangle(22, ny, 240, 28)
+        };
+        ny += 52;
+
+        var btnSaveNotif = Theme.CreatePrimaryButton("Enregistrer les préférences", 215, 38);
+        btnSaveNotif.Location = new Point(22, ny);
+        btnSaveNotif.Click += (_, _) =>
+        {
+            if (!decimal.TryParse(txtThreshold.Text.Replace(" ", ""), out var seuil) || seuil < 0)
+            {
+                MessageBox.Show("Veuillez saisir un seuil numérique valide (ex. 200000).", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            notifService.SavePreferences(new NotificationPreferences(chkToast.Checked, chkSound.Checked, seuil));
+            notifService.SyncAutomaticAlerts();
+            MessageBox.Show("Préférences de notifications enregistrées et appliquées !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        };
+
+        var btnTestToast = Theme.CreateSecondaryButton("Tester une alerte", 155, 38);
+        btnTestToast.Location = new Point(250, ny);
+        btnTestToast.Click += (_, _) =>
+        {
+            if (chkSound.Checked) System.Media.SystemSounds.Exclamation.Play();
+            if (FindForm() is Form owner)
+            {
+                var toast = new Dialogs.FrmToastNotification(
+                    owner,
+                    "Aperçu de notification IIT FINCORE",
+                    "Vos alertes temps réel (solde bas, budgets, échéances J-3) apparaîtront ici.",
+                    "SUCCES");
+                toast.Show(owner);
+            }
+        };
+
+        cardNotif.Controls.AddRange(new Control[] { chkToast, chkSound, txtThreshold, btnSaveNotif, btnTestToast });
+        tabNotif.Controls.Add(cardNotif);
+        tabs.TabPages.Add(tabNotif);
+
         // Onglet 2 : Paramètres généraux (Admin) - 100% responsive FlowLayoutPanel
         if (UserSession.IsAdmin)
         {

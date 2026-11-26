@@ -4,11 +4,13 @@ using IIT.FinCore.WinForms.Models;
 
 namespace IIT.FinCore.WinForms.Services;
 
+public record NotificationPreferences(bool ToastEnabled, bool SoundEnabled, decimal LowBalanceThreshold);
+
 /// <summary>
 /// Service de Notifications intelligentes temps réel (MySQL) :
-/// - Détecte automatiquement les dépassements budgétaires (>=80% / >=100%), demandes en attente,
-///   cotisations impayées et opérations non rapprochées (sans doublons).
-/// - Permet d'émettre des alertes instantanées lors des actions clés (validations, clôtures).
+/// - Détecte automatiquement : dépassements budgétaires (>=80% / >=100%), demandes en attente,
+///   comptes à solde bas, échéances récurrentes J-3, cotisations impayées et opérations non rapprochées.
+/// - Gère les préférences utilisateur (Toast, son discret, seuil de solde bas) et la suppression/nettoyage.
 /// </summary>
 public class NotificationService
 {
@@ -36,6 +38,45 @@ public class NotificationService
             """);
     }
 
+    public NotificationPreferences GetPreferences()
+    {
+        try
+        {
+            using var conn = DatabaseConfig.CreateConnection();
+            var rows = conn.Query<(string Cle, string Val)>(
+                "SELECT cle_param, valeur_param FROM parametres_generaux WHERE cle_param IN ('NOTIF_TOAST_ENABLED', 'NOTIF_SOUND_ENABLED', 'NOTIF_LOW_BALANCE_THRESHOLD')")
+                .ToDictionary(x => x.Cle, x => x.Val);
+
+            bool toast = !rows.TryGetValue("NOTIF_TOAST_ENABLED", out var tv) || tv != "0";
+            bool sound = !rows.TryGetValue("NOTIF_SOUND_ENABLED", out var sv) || sv != "0";
+            decimal threshold = rows.TryGetValue("NOTIF_LOW_BALANCE_THRESHOLD", out var lv) && decimal.TryParse(lv, out var parsed)
+                ? parsed : 200_000m;
+
+            return new NotificationPreferences(toast, sound, threshold);
+        }
+        catch
+        {
+            return new NotificationPreferences(true, true, 200_000m);
+        }
+    }
+
+    public void SavePreferences(NotificationPreferences prefs)
+    {
+        using var conn = DatabaseConfig.CreateConnection();
+        UpsertParam(conn, "NOTIF_TOAST_ENABLED", prefs.ToastEnabled ? "1" : "0", "Afficher les popups Toast de notification");
+        UpsertParam(conn, "NOTIF_SOUND_ENABLED", prefs.SoundEnabled ? "1" : "0", "Jouer un son discret sur les alertes critiques");
+        UpsertParam(conn, "NOTIF_LOW_BALANCE_THRESHOLD", ((long)prefs.LowBalanceThreshold).ToString(), "Seuil d'alerte de solde bas par compte (FCFA)");
+    }
+
+    private static void UpsertParam(System.Data.IDbConnection conn, string key, string val, string desc)
+    {
+        conn.Execute("""
+            INSERT INTO parametres_generaux (cle_param, valeur_param, description)
+            VALUES (@k, @v, @d)
+            ON DUPLICATE KEY UPDATE valeur_param = @v
+            """, new { k = key, v = val, d = desc });
+    }
+
     /// <summary>
     /// Analyse l'état financier en base MySQL et génère automatiquement les alertes pertinentes
     /// (dédupliquées par clé unique journalière).
@@ -46,6 +87,7 @@ public class NotificationService
         {
             EnsureSchema();
             var today = DateTime.Today.ToString("yyyyMMdd");
+            var prefs = GetPreferences();
 
             // 1. Alertes budgétaires (>= 80% et >= 100%)
             var budgets = _repo.GetSuiviBudgetaire();
@@ -75,7 +117,38 @@ public class NotificationService
                 }
             }
 
-            // 2. Demandes de dépenses en attente de validation (ciblé ADMIN)
+            // 2. Comptes à solde bas (< seuil configuré)
+            var comptes = _repo.GetComptes();
+            foreach (var c in comptes.Where(x => x.EstActif && x.SoldeActuel < prefs.LowBalanceThreshold))
+            {
+                InsertIfNotExists(
+                    cleUnique: $"LOW_BAL_{c.Id}_{today}",
+                    roleCible: "ALL",
+                    structureId: c.StructureId,
+                    niveau: "CRITIQUE",
+                    titre: $"Solde bas : {c.NomCompte}",
+                    message: $"Solde actuel de {c.SoldeActuel:N0} {c.Devise}, inférieur au seuil d'alerte de {prefs.LowBalanceThreshold:N0} FCFA ({c.StructureNom}).",
+                    moduleCible: "comptes");
+            }
+
+            // 3. Échéances d'opérations récurrentes dans les 3 prochains jours (J-3)
+            var recurrentes = _repo.GetOperationsRecurrentes();
+            var limitDate = DateTime.Today.AddDays(3);
+            foreach (var op in recurrentes.Where(o => o.EstActif && o.ProchaineEcheance.Date <= limitDate))
+            {
+                var days = (op.ProchaineEcheance.Date - DateTime.Today).Days;
+                var when = days < 0 ? $"en retard de {-days} j" : (days == 0 ? "aujourd'hui" : $"dans {days} j");
+                InsertIfNotExists(
+                    cleUnique: $"REC_DUE_{op.Id}_{today}",
+                    roleCible: "ALL",
+                    structureId: op.StructureId,
+                    niveau: "ALERTE",
+                    titre: $"Échéance récurrente {when}",
+                    message: $"{op.Libelle} ({op.Montant:N0} FCFA - {op.TypeOperation}) prévue le {op.ProchaineEcheance:dd/MM/yyyy}.",
+                    moduleCible: "pilotage");
+            }
+
+            // 4. Demandes de dépenses en attente de validation (ciblé ADMIN)
             var pending = _repo.GetDemandesValidation(onlyPending: true);
             if (pending.Count > 0)
             {
@@ -90,7 +163,7 @@ public class NotificationService
                     moduleCible: "validations");
             }
 
-            // 3. Cotisations impayées ou partielles
+            // 5. Cotisations impayées ou partielles
             using var conn = DatabaseConfig.CreateConnection();
             var impayes = conn.ExecuteScalar<int>(
                 "SELECT COUNT(*) FROM paiements_cotisations WHERE statut IN ('IMPAYE', 'PARTIEL')");
@@ -106,7 +179,7 @@ public class NotificationService
                     moduleCible: "cotisations");
             }
 
-            // 4. Opérations validées non rapprochées sur relevé bancaire / Mobile Money
+            // 6. Opérations validées non rapprochées sur relevé bancaire / Mobile Money
             var nonPointees = conn.ExecuteScalar<int>(
                 "SELECT COUNT(*) FROM transactions WHERE statut = 'VALIDEE' AND est_rapprochee = 0");
             if (nonPointees > 0)
@@ -246,6 +319,34 @@ public class NotificationService
                 UPDATE notifications
                 SET est_lue = 1
                 WHERE est_lue = 0
+                  AND (utilisateur_id = @uid
+                       OR (utilisateur_id IS NULL AND (role_cible = 'ALL' OR role_cible = @role)))
+                  AND (structure_id IS NULL OR @role <> 'TRESORIER' OR structure_id = @sid)
+                """, new { uid = u.Id, role = u.RoleCode, sid = u.StructureId });
+        }
+        catch { }
+    }
+
+    public void DeleteNotification(int id)
+    {
+        try
+        {
+            using var conn = DatabaseConfig.CreateConnection();
+            conn.Execute("DELETE FROM notifications WHERE id = @id", new { id });
+        }
+        catch { }
+    }
+
+    public void ClearReadNotifications()
+    {
+        try
+        {
+            var u = UserSession.CurrentUser;
+            if (u == null) return;
+            using var conn = DatabaseConfig.CreateConnection();
+            conn.Execute("""
+                DELETE FROM notifications
+                WHERE est_lue = 1
                   AND (utilisateur_id = @uid
                        OR (utilisateur_id IS NULL AND (role_cible = 'ALL' OR role_cible = @role)))
                   AND (structure_id IS NULL OR @role <> 'TRESORIER' OR structure_id = @sid)

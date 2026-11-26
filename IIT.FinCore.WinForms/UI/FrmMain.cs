@@ -19,6 +19,7 @@ public class FrmMain : Form, IMessageFilter
     private readonly System.Windows.Forms.Timer _idleTimer = new();
     private readonly System.Windows.Forms.Timer _notifTimer = new();
     private readonly NotificationService _notifService = new();
+    private NotifyIcon? _trayIcon;
     private SmoothPanel _notifBadgeBtn = null!;
     private int _unreadNotifCount;
     private DateTime _lastActivityUtc = DateTime.UtcNow;
@@ -47,6 +48,23 @@ public class FrmMain : Form, IMessageFilter
 
     private void StartNotificationGuard()
     {
+        // Icône système Windows (zone de notification près de l'horloge)
+        var trayMenu = new ContextMenuStrip();
+        trayMenu.Items.Add("Ouvrir IIT FINCORE", null, (_, _) => RestoreWindow());
+        trayMenu.Items.Add("Centre de Notifications", null, (_, _) => { RestoreWindow(); OpenNotificationCenter(); });
+        trayMenu.Items.Add(new ToolStripSeparator());
+        trayMenu.Items.Add("Quitter", null, (_, _) => Close());
+
+        _trayIcon = new NotifyIcon
+        {
+            Icon = Theme.LoadAppIcon() ?? SystemIcons.Application,
+            Text = "IIT FINCORE - Gestion de trésorerie",
+            ContextMenuStrip = trayMenu,
+            Visible = true
+        };
+        _trayIcon.DoubleClick += (_, _) => RestoreWindow();
+        _trayIcon.BalloonTipClicked += (_, _) => { RestoreWindow(); OpenNotificationCenter(); };
+
         Shown += (_, _) =>
         {
             _notifService.SyncAutomaticAlerts();
@@ -56,14 +74,8 @@ public class FrmMain : Form, IMessageFilter
             if (unread.Count > 0)
             {
                 var top = unread[0];
-                var suffix = unread.Count > 1 ? $" (+{unread.Count - 1} autre(s) alerte(s))" : "";
-                var toast = new FrmToastNotification(
-                    this,
-                    $"{top.Titre}{suffix}",
-                    top.Message,
-                    top.Niveau,
-                    OpenNotificationCenter);
-                toast.Show(this);
+                var suffix = unread.Count > 1 ? $" (+{unread.Count - 1} autre(s))" : "";
+                NotifyUser($"{top.Titre}{suffix}", top.Message, top.Niveau);
             }
         };
 
@@ -77,14 +89,47 @@ public class FrmMain : Form, IMessageFilter
             {
                 var latest = _notifService.GetNotificationsForCurrentUser(1).FirstOrDefault();
                 if (latest != null)
-                {
-                    var toast = new FrmToastNotification(this, latest.Titre, latest.Message, latest.Niveau, OpenNotificationCenter);
-                    toast.Show(this);
-                }
+                    NotifyUser(latest.Titre, latest.Message, latest.Niveau);
             }
         };
         _notifTimer.Start();
-        FormClosed += (_, _) => _notifTimer.Stop();
+        FormClosed += (_, _) =>
+        {
+            _notifTimer.Stop();
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = false;
+                _trayIcon.Dispose();
+                _trayIcon = null;
+            }
+        };
+    }
+
+    private void RestoreWindow()
+    {
+        if (WindowState == FormWindowState.Minimized)
+            WindowState = FormWindowState.Normal;
+        Activate();
+    }
+
+    private void NotifyUser(string title, string message, string niveau)
+    {
+        var prefs = _notifService.GetPreferences();
+        if (prefs.SoundEnabled && niveau == "CRITIQUE")
+            System.Media.SystemSounds.Exclamation.Play();
+
+        if (WindowState == FormWindowState.Minimized && _trayIcon != null)
+        {
+            var icon = niveau == "CRITIQUE" ? ToolTipIcon.Error : (niveau == "ALERTE" ? ToolTipIcon.Warning : ToolTipIcon.Info);
+            _trayIcon.ShowBalloonTip(4500, title, message, icon);
+            return;
+        }
+
+        if (prefs.ToastEnabled)
+        {
+            var toast = new FrmToastNotification(this, title, message, niveau, OpenNotificationCenter);
+            toast.Show(this);
+        }
     }
 
     private void RefreshNotificationBadge()

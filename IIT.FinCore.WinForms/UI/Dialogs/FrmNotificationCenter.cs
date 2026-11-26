@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using IIT.FinCore.WinForms.Models;
@@ -8,7 +9,7 @@ namespace IIT.FinCore.WinForms.UI.Dialogs;
 /// <summary>
 /// Centre de Notifications commercial IIT FINCORE :
 /// Filtres (Toutes / Non lues / Critiques), cartes interactives avec barre de gravité,
-/// marquage comme lu et navigation directe vers le module concerné.
+/// suppression individuelle, nettoyage des lues, partage WhatsApp 1-clic et navigation directe.
 /// </summary>
 public class FrmNotificationCenter : Form
 {
@@ -23,7 +24,7 @@ public class FrmNotificationCenter : Form
     {
         _onNavigate = onNavigate;
         Text = "IIT FINCORE - Centre de Notifications";
-        Size = new Size(580, 620);
+        Size = new Size(630, 640);
         StartPosition = FormStartPosition.CenterParent;
         DoubleBuffered = true;
 
@@ -35,10 +36,10 @@ public class FrmNotificationCenter : Form
     {
         var header = Theme.CreateDialogHeader(
             "Centre de Notifications",
-            "Alertes budgétaires, validations, cotisations et suivi temps réel");
+            "Alertes budgétaires, soldes bas, échéances J-3, validations et suivi temps réel");
         Theme.ApplyModernDialogChrome(this, header);
 
-        // Barre de filtres + Tout marquer comme lu
+        // Barre de filtres + actions de nettoyage
         var toolBar = new Panel
         {
             Dock = DockStyle.Top,
@@ -55,7 +56,7 @@ public class FrmNotificationCenter : Form
         var leftFilters = new FlowLayoutPanel
         {
             Dock = DockStyle.Left,
-            Width = 310,
+            Width = 285,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false,
             BackColor = Color.Transparent
@@ -74,11 +75,11 @@ public class FrmNotificationCenter : Form
             {
                 Text = f.Label,
                 Tag = f.Key,
-                Size = new Size(92, 32),
+                Size = new Size(86, 32),
                 FlatStyle = FlatStyle.Flat,
                 Font = Theme.UiFont(8.8F, FontStyle.Bold),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 8, 0)
+                Margin = new Padding(0, 0, 6, 0)
             };
             btn.FlatAppearance.BorderSize = 0;
             Theme.ApplyRoundedRegion(btn, 8);
@@ -92,16 +93,36 @@ public class FrmNotificationCenter : Form
             leftFilters.Controls.Add(btn);
         }
 
-        var btnMarkAll = Theme.CreateSecondaryButton("Tout marquer lu", 136, 32);
-        btnMarkAll.Dock = DockStyle.Right;
+        var rightActions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Right,
+            AutoSize = true,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Color.Transparent
+        };
+
+        var btnMarkAll = Theme.CreateSecondaryButton("Tout lu", 88, 32);
+        btnMarkAll.Margin = new Padding(0, 0, 6, 0);
         btnMarkAll.Click += (_, _) =>
         {
             _service.MarkAllAsRead();
             LoadNotifications();
         };
 
+        var btnClearRead = Theme.CreateSecondaryButton("Effacer lues", 106, 32);
+        btnClearRead.Margin = new Padding(0);
+        btnClearRead.Click += (_, _) =>
+        {
+            _service.ClearReadNotifications();
+            LoadNotifications();
+        };
+
+        rightActions.Controls.Add(btnMarkAll);
+        rightActions.Controls.Add(btnClearRead);
+
         toolBar.Controls.Add(leftFilters);
-        toolBar.Controls.Add(btnMarkAll);
+        toolBar.Controls.Add(rightActions);
 
         // Liste scrollable des notifications
         _feed.Dock = DockStyle.Fill;
@@ -127,8 +148,8 @@ public class FrmNotificationCenter : Form
 
         var lblHint = new Label
         {
-            Text = "Cliquez sur une notification pour ouvrir directement le module concerné.",
-            Font = Theme.UiFont(8.4F),
+            Text = "Cliquez sur une alerte pour ouvrir le module concerné • WhatsApp pour partager.",
+            Font = Theme.UiFont(8.3F),
             ForeColor = Theme.TextMuted,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft
@@ -186,7 +207,7 @@ public class FrmNotificationCenter : Form
                     : "Aucune alerte à afficher pour ce filtre.",
                 Font = Theme.FontBodyBold,
                 ForeColor = Theme.TextMuted,
-                Size = new Size(520, 80),
+                Size = new Size(570, 80),
                 TextAlign = ContentAlignment.MiddleCenter,
                 BackColor = Color.Transparent
             };
@@ -195,7 +216,7 @@ public class FrmNotificationCenter : Form
             return;
         }
 
-        int cardW = 526;
+        int cardW = 576;
         foreach (var n in items)
         {
             var card = CreateNotificationCard(n, cardW);
@@ -221,14 +242,58 @@ public class FrmNotificationCenter : Form
             _ => "INFO"
         };
 
+        bool isImportant = n.Niveau is "CRITIQUE" or "ALERTE";
         bool hovered = false;
         var card = new SmoothPanel
         {
-            Size = new Size(width, 94),
+            Size = new Size(width, isImportant ? 104 : 94),
             Margin = new Padding(0, 0, 0, 10),
             BackColor = n.EstLue ? Color.FromArgb(248, 250, 253) : Color.White,
             Cursor = Cursors.Hand
         };
+
+        // Bouton discret × pour supprimer la notification
+        var btnDel = new Button
+        {
+            Text = "×",
+            Size = new Size(24, 24),
+            Location = new Point(width - 32, 8),
+            FlatStyle = FlatStyle.Flat,
+            Font = Theme.UiFont(10.5F, FontStyle.Bold),
+            ForeColor = Theme.TextMuted,
+            BackColor = Color.Transparent,
+            Cursor = Cursors.Hand
+        };
+        btnDel.FlatAppearance.BorderSize = 0;
+        btnDel.FlatAppearance.MouseOverBackColor = Color.FromArgb(254, 226, 226);
+        Theme.ApplyRoundedRegion(btnDel, 6);
+        btnDel.Click += (_, _) =>
+        {
+            _service.DeleteNotification(n.Id);
+            LoadNotifications();
+        };
+        card.Controls.Add(btnDel);
+
+        // Bouton Partager WhatsApp en 1 clic sur les alertes critiques / importantes
+        if (isImportant)
+        {
+            var btnWa = new Button
+            {
+                Text = "WhatsApp",
+                Size = new Size(80, 22),
+                Location = new Point(width - 92, card.Height - 28),
+                FlatStyle = FlatStyle.Flat,
+                Font = Theme.UiFont(7.6F, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Theme.SuccessGreen,
+                Cursor = Cursors.Hand
+            };
+            btnWa.FlatAppearance.BorderSize = 0;
+            btnWa.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.SuccessGreen, 0.1f);
+            Theme.ApplyRoundedRegion(btnWa, 6);
+            btnWa.Click += (_, _) => ShareOnWhatsApp(n);
+            card.Controls.Add(btnWa);
+        }
 
         card.MouseEnter += (_, _) => { hovered = true; card.Invalidate(); };
         card.MouseLeave += (_, _) => { hovered = false; card.Invalidate(); };
@@ -265,27 +330,42 @@ public class FrmNotificationCenter : Form
             TextRenderer.DrawText(g, badgeLabel, Theme.UiFont(7.2F, FontStyle.Bold),
                 badgeRect, accent, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
 
-            // Horodatage à droite
+            // Point non lu à côté du badge
+            if (!n.EstLue)
+                g.FillEllipse(new SolidBrush(accent), 100, 15, 8, 8);
+
+            // Horodatage à droite (avant le bouton ×)
             var timeStr = NotificationService.FormatRelativeTime(n.DateCreation);
             TextRenderer.DrawText(g, timeStr, Theme.UiFont(7.8F, FontStyle.Regular),
-                new Rectangle(card.Width - 170, 10, 146, 18), Theme.TextMuted,
+                new Rectangle(card.Width - 196, 10, 156, 18), Theme.TextMuted,
                 TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-
-            // Point non lu
-            if (!n.EstLue)
-                g.FillEllipse(new SolidBrush(accent), card.Width - 18, 15, 8, 8);
 
             // Titre
             TextRenderer.DrawText(g, n.Titre, Theme.UiFont(9.4F, FontStyle.Bold),
-                new Rectangle(20, 32, card.Width - 36, 20), Theme.TextPrimary,
+                new Rectangle(20, 32, card.Width - 54, 20), Theme.TextPrimary,
                 TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
 
-            // Message (2 lignes)
+            // Message
+            int msgW = isImportant ? card.Width - 120 : card.Width - 36;
             TextRenderer.DrawText(g, n.Message, Theme.UiFont(8.5F, FontStyle.Regular),
-                new Rectangle(20, 53, card.Width - 36, 34), Theme.TextMuted,
+                new Rectangle(20, 53, msgW, 42), Theme.TextMuted,
                 TextFormatFlags.Left | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         };
 
         return card;
+    }
+
+    private static void ShareOnWhatsApp(NotificationItem n)
+    {
+        var text = $"[IIT FINCORE - {n.Niveau}]\n{n.Titre}\n{n.Message}\n({n.DateCreation:dd/MM/yyyy HH:mm})";
+        var url = "https://wa.me/?text=" + Uri.EscapeDataString(text);
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Impossible d'ouvrir WhatsApp : " + ex.Message, "Partage WhatsApp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 }
