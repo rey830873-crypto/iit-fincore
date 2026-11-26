@@ -290,6 +290,17 @@ public class TreasuryRepository
                 "Transactions", "transactions", trxId,
                 $"{trx.Reference} | {trx.Libelle} | {trx.Montant:N0} FCFA | {imputations.Count} centre(s) | Statut: {trx.Statut}");
 
+            if (requiresValidation)
+            {
+                new Services.NotificationService().PushNotification(
+                    roleCible: "ADMIN",
+                    structureId: null,
+                    niveau: "ALERTE",
+                    titre: "Nouvelle demande de dépense à valider",
+                    message: $"{trx.Libelle} ({trx.Montant:N0} FCFA) attend votre approbation.",
+                    moduleCible: "validations");
+            }
+
             return trxId;
         }
         catch
@@ -373,6 +384,16 @@ public class TreasuryRepository
             dbTrx.Commit();
             _audit.LogActivity(validateurId, approve ? "Validation dépense" : "Rejet dépense",
                 "Validations", "demandes_validation", demandeId, commentaire);
+
+            new Services.NotificationService().PushNotification(
+                roleCible: "TRESORIER",
+                structureId: null,
+                niveau: approve ? "SUCCES" : "ALERTE",
+                titre: approve ? "Dépense approuvée par l'Administration" : "Dépense rejetée par l'Administration",
+                message: string.IsNullOrWhiteSpace(commentaire)
+                    ? (approve ? "Votre demande de dépense a été validée et comptabilisée." : "Votre demande de dépense a été rejetée.")
+                    : $"Décision : {commentaire}",
+                moduleCible: "validations");
         }
         catch
         {
@@ -847,6 +868,14 @@ public class TreasuryRepository
             trx.Commit();
             _audit.LogActivity(adminId, "Clôture d'exercice", "Exercices", "exercices_comptables", exerciceId,
                 $"Clôture {ex.Libelle} (Solde: {soldeGlobal:N0} FCFA) + Ouverture Exercice {nextYear}");
+
+            new Services.NotificationService().PushNotification(
+                roleCible: "ALL",
+                structureId: null,
+                niveau: "SUCCES",
+                titre: $"{ex.Libelle} clôturé avec succès",
+                message: $"Solde de clôture : {soldeGlobal:N0} FCFA. L'exercice {nextYear} est désormais ouvert.",
+                moduleCible: "pilotage");
         }
         catch
         {

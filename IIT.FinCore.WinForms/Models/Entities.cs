@@ -272,3 +272,18 @@ public class CashFlowPoint
     public decimal SoldeProjete { get; set; }
 }
 
+public class NotificationItem
+{
+    public int Id { get; set; }
+    public int? UtilisateurId { get; set; }
+    public string RoleCible { get; set; } = "ALL";
+    public int? StructureId { get; set; }
+    public string Niveau { get; set; } = "INFO"; // CRITIQUE, ALERTE, INFO, SUCCES
+    public string? CleUnique { get; set; }
+    public string Titre { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string ModuleCible { get; set; } = "dashboard";
+    public bool EstLue { get; set; }
+    public DateTime DateCreation { get; set; }
+}
+

@@ -17,6 +17,10 @@ public class FrmMain : Form, IMessageFilter
     private readonly Label _lblPageSubtitle = new();
     private readonly Dictionary<string, Button> _navButtons = new();
     private readonly System.Windows.Forms.Timer _idleTimer = new();
+    private readonly System.Windows.Forms.Timer _notifTimer = new();
+    private readonly NotificationService _notifService = new();
+    private SmoothPanel _notifBadgeBtn = null!;
+    private int _unreadNotifCount;
     private DateTime _lastActivityUtc = DateTime.UtcNow;
     private static readonly TimeSpan InactivityTimeout = TimeSpan.FromMinutes(15);
     private string _currentKey = "dashboard";
@@ -37,7 +41,67 @@ public class FrmMain : Form, IMessageFilter
         Theme.ApplyCrispPixelFonts(this);
         Navigate("dashboard");
         StartInactivityGuard();
+        StartNotificationGuard();
         KeyDown += HandleGlobalShortcuts;
+    }
+
+    private void StartNotificationGuard()
+    {
+        Shown += (_, _) =>
+        {
+            _notifService.SyncAutomaticAlerts();
+            RefreshNotificationBadge();
+
+            var unread = _notifService.GetNotificationsForCurrentUser(5).Where(n => !n.EstLue).ToList();
+            if (unread.Count > 0)
+            {
+                var top = unread[0];
+                var suffix = unread.Count > 1 ? $" (+{unread.Count - 1} autre(s) alerte(s))" : "";
+                var toast = new FrmToastNotification(
+                    this,
+                    $"{top.Titre}{suffix}",
+                    top.Message,
+                    top.Niveau,
+                    OpenNotificationCenter);
+                toast.Show(this);
+            }
+        };
+
+        _notifTimer.Interval = 45_000; // Vérifie toutes les 45 secondes
+        _notifTimer.Tick += (_, _) =>
+        {
+            int previous = _unreadNotifCount;
+            _notifService.SyncAutomaticAlerts();
+            RefreshNotificationBadge();
+            if (_unreadNotifCount > previous)
+            {
+                var latest = _notifService.GetNotificationsForCurrentUser(1).FirstOrDefault();
+                if (latest != null)
+                {
+                    var toast = new FrmToastNotification(this, latest.Titre, latest.Message, latest.Niveau, OpenNotificationCenter);
+                    toast.Show(this);
+                }
+            }
+        };
+        _notifTimer.Start();
+        FormClosed += (_, _) => _notifTimer.Stop();
+    }
+
+    private void RefreshNotificationBadge()
+    {
+        _unreadNotifCount = _notifService.GetUnreadCount();
+        _notifBadgeBtn?.Invalidate();
+    }
+
+    private void OpenNotificationCenter()
+    {
+        using var dlg = new FrmNotificationCenter(targetModule =>
+        {
+            if (_navButtons.ContainsKey(targetModule))
+                Navigate(targetModule);
+        });
+        dlg.ShowDialog(this);
+        RefreshNotificationBadge();
     }
 
     private void HandleGlobalShortcuts(object? sender, KeyEventArgs e)
@@ -63,6 +127,7 @@ public class FrmMain : Form, IMessageFilter
         else if (e.Control && e.KeyCode == Keys.D2) { e.Handled = true; Navigate("comptes"); }
         else if (e.Control && e.KeyCode == Keys.D3) { e.Handled = true; Navigate("transactions"); }
         else if (e.Control && e.KeyCode == Keys.D4) { e.Handled = true; Navigate("rapports"); }
+        else if (e.Control && e.KeyCode == Keys.I) { e.Handled = true; OpenNotificationCenter(); }
     }
 
     private void StartInactivityGuard()
@@ -364,6 +429,53 @@ public class FrmMain : Form, IMessageFilter
 
         var tip = new ToolTip { InitialDelay = 250, AutoPopDelay = 5000 };
 
+        // Bouton Centre de Notifications avec badge compteur temps réel
+        bool notifHovered = false;
+        _notifBadgeBtn = new SmoothPanel
+        {
+            Size = new Size(106, 38),
+            Margin = new Padding(0, 2, 10, 0),
+            BackColor = Color.FromArgb(247, 249, 253),
+            Cursor = Cursors.Hand
+        };
+        _notifBadgeBtn.MouseEnter += (_, _) => { notifHovered = true; _notifBadgeBtn.Invalidate(); };
+        _notifBadgeBtn.MouseLeave += (_, _) => { notifHovered = false; _notifBadgeBtn.Invalidate(); };
+        _notifBadgeBtn.Click += (_, _) => OpenNotificationCenter();
+        _notifBadgeBtn.Paint += (_, e) =>
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            var r = new Rectangle(0, 0, _notifBadgeBtn.Width - 1, _notifBadgeBtn.Height - 1);
+            using var path = Theme.CreateRoundedPath(r, 10);
+            g.FillPath(new SolidBrush(notifHovered ? Theme.GoldSoftBg : Color.FromArgb(247, 249, 253)), path);
+            g.DrawPath(new Pen(notifHovered ? Theme.GoldAccent : (_unreadNotifCount > 0 ? Color.FromArgb(220, Theme.DangerRed) : Theme.BorderColor), 1.2f), path);
+
+            if (_unreadNotifCount > 0)
+            {
+                TextRenderer.DrawText(g, "Alertes", Theme.UiFont(8.9F, FontStyle.Bold),
+                    new Rectangle(10, 0, 56, _notifBadgeBtn.Height), Theme.TextPrimary,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+
+                var badgeText = _unreadNotifCount > 99 ? "99+" : _unreadNotifCount.ToString();
+                var badgeRect = new Rectangle(_notifBadgeBtn.Width - 34, 8, 26, 22);
+                using var bp = Theme.CreateRoundedPath(badgeRect, 11);
+                g.FillPath(new SolidBrush(Theme.DangerRed), bp);
+                TextRenderer.DrawText(g, badgeText, Theme.UiFont(8F, FontStyle.Bold),
+                    badgeRect, Color.White,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            }
+            else
+            {
+                TextRenderer.DrawText(g, "Alertes", Theme.UiFont(8.9F, FontStyle.Bold),
+                    r, Theme.TextMuted,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            }
+        };
+        tip.SetToolTip(_notifBadgeBtn, "Ouvrir le Centre de Notifications & Alertes (Ctrl+I)");
+        rightBar.Controls.Add(_notifBadgeBtn);
+
         // Bouton Aide & Raccourcis rapide (?)
         var btnHelp = Theme.CreateSecondaryButton("?", 38, 38);
         btnHelp.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
@@ -378,6 +490,7 @@ public class FrmMain : Form, IMessageFilter
                 "• Faites un clic droit sur un tableau pour copier une cellule ou une ligne.\n\n" +
                 "Raccourcis clavier utiles :\n" +
                 "  • F5          : Actualiser la page courante\n" +
+                "  • Ctrl + I   : Centre de Notifications & Alertes\n" +
                 "  • Ctrl + N   : Saisir une nouvelle opération (Recette / Dépense)\n" +
                 "  • Ctrl + T   : Effectuer un transfert entre comptes\n" +
                 "  • Ctrl + 1   : Tableau de bord\n" +
@@ -511,5 +624,6 @@ public class FrmMain : Form, IMessageFilter
         Theme.ApplyCrispPixelFonts(page.Control);
         _contentHost.Controls.Add(page.Control);
         _contentHost.ResumeLayout();
+        RefreshNotificationBadge();
     }
 }

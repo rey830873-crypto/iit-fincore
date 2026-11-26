@@ -90,3 +90,22 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+
+-- 4. Centre de Notifications & Alertes intelligentes
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT NULL,
+    role_cible VARCHAR(30) NOT NULL DEFAULT 'ALL',
+    structure_id INT NULL,
+    niveau ENUM('CRITIQUE', 'ALERTE', 'INFO', 'SUCCES') NOT NULL DEFAULT 'INFO',
+    cle_unique VARCHAR(120) NULL,
+    titre VARCHAR(160) NOT NULL,
+    message VARCHAR(400) NOT NULL,
+    module_cible VARCHAR(40) NOT NULL DEFAULT 'dashboard',
+    est_lue TINYINT(1) NOT NULL DEFAULT 0,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notif_role (role_cible, est_lue, date_creation),
+    INDEX idx_notif_cle (cle_unique),
+    CONSTRAINT fk_notif_user FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notif_struct FOREIGN KEY (structure_id) REFERENCES structures(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
