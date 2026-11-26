@@ -25,87 +25,114 @@ public class UcTransactions : UserControl
 
     private void BuildLayout()
     {
-        var bar = Theme.CreateCardPanel(new Padding(14, 12, 14, 12));
+        var bar = Theme.CreateCardPanel(new Padding(14, 12, 14, 10));
         bar.Dock = DockStyle.Top;
-        bar.AutoSize = true;
+        bar.Height = 104;
 
-        var flow = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true, BackColor = Color.Transparent };
+        var row1 = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 42,
+            WrapContents = false,
+            BackColor = Color.Transparent
+        };
 
         _cboFilterType.Width = 155;
         _cboFilterType.DropDownStyle = ComboBoxStyle.DropDownList;
         _cboFilterType.Items.AddRange(new object[] { "TOUS", "RECETTE", "DEPENSE", "TRANSFERT_SORTANT", "TRANSFERT_ENTRANT" });
         _cboFilterType.SelectedIndex = 0;
-        _cboFilterType.Margin = new Padding(0, 4, 10, 4);
+        _cboFilterType.Margin = new Padding(0, 4, 10, 0);
         _cboFilterType.SelectedIndexChanged += (_, _) => LoadData();
 
-        _txtSearch.Width = 200;
+        _txtSearch.Width = 220;
         _txtSearch.PlaceholderText = "Rechercher libellé / réf...";
-        _txtSearch.Margin = new Padding(0, 4, 14, 4);
+        _txtSearch.Margin = new Padding(0, 4, 14, 0);
         _txtSearch.TextChanged += (_, _) => ApplyFilter();
 
-        flow.Controls.Add(_cboFilterType);
-        flow.Controls.Add(_txtSearch);
+        row1.Controls.Add(_cboFilterType);
+        row1.Controls.Add(_txtSearch);
 
         if (UserSession.HasPermission("RECETTE_CREATE"))
         {
-            var btnRec = Theme.CreatePrimaryButton("+ Recette", 120, 34);
+            var btnRec = Theme.CreatePrimaryButton("+ Recette", 118, 34);
             btnRec.BackColor = Theme.SuccessGreen;
-            btnRec.Margin = new Padding(0, 0, 8, 4);
+            btnRec.Margin = new Padding(0, 0, 8, 0);
             btnRec.Click += (_, _) => OpenTrxDialog("RECETTE");
-            flow.Controls.Add(btnRec);
+            row1.Controls.Add(btnRec);
         }
         if (UserSession.HasPermission("DEPENSE_CREATE"))
         {
-            var btnDep = Theme.CreatePrimaryButton("+ Dépense", 120, 34);
+            var btnDep = Theme.CreatePrimaryButton("+ Dépense", 118, 34);
             btnDep.BackColor = Theme.DangerRed;
-            btnDep.Margin = new Padding(0, 0, 8, 4);
+            btnDep.Margin = new Padding(0, 0, 8, 0);
             btnDep.Click += (_, _) => OpenTrxDialog("DEPENSE");
-            flow.Controls.Add(btnDep);
+            row1.Controls.Add(btnDep);
         }
         if (UserSession.HasPermission("TRANSFERT_CREATE"))
         {
-            var btnTrf = Theme.CreatePrimaryButton("Transfert", 115, 34);
-            btnTrf.Margin = new Padding(0, 0, 8, 4);
+            var btnTrf = Theme.CreatePrimaryButton("Transfert", 112, 34);
+            btnTrf.Margin = new Padding(0, 0, 0, 0);
             btnTrf.Click += (_, _) =>
             {
                 using var dlg = new FrmTransfertDialog();
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                     LoadData();
             };
-            flow.Controls.Add(btnTrf);
+            row1.Controls.Add(btnTrf);
         }
 
-        var btnDetails = Theme.CreateSecondaryButton("Voir détails", 110, 34);
-        btnDetails.Margin = new Padding(0, 0, 8, 4);
-        btnDetails.Click += (_, _) => ShowSelectedDetails();
-        flow.Controls.Add(btnDetails);
+        var row2 = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 40,
+            WrapContents = false,
+            BackColor = Color.Transparent,
+            Padding = new Padding(0, 4, 0, 0)
+        };
 
-        var btnReceipt = Theme.CreateSecondaryButton("Reçu PDF", 105, 34);
-        btnReceipt.Margin = new Padding(0, 0, 8, 4);
+        var lblActions = new Label
+        {
+            Text = "Opération sélectionnée :",
+            Font = Theme.FontBodyBold,
+            ForeColor = Theme.TextMuted,
+            AutoSize = true,
+            Margin = new Padding(0, 8, 10, 0)
+        };
+        row2.Controls.Add(lblActions);
+
+        var btnDetails = Theme.CreateSecondaryButton("Voir détails", 114, 34);
+        btnDetails.Margin = new Padding(0, 0, 8, 0);
+        btnDetails.Click += (_, _) => ShowSelectedDetails();
+        row2.Controls.Add(btnDetails);
+
+        var btnReceipt = Theme.CreateSecondaryButton("Reçu PDF", 108, 34);
+        btnReceipt.Margin = new Padding(0, 0, 8, 0);
         btnReceipt.Click += (_, _) => PrintSelectedReceiptPdf();
-        flow.Controls.Add(btnReceipt);
+        row2.Controls.Add(btnReceipt);
 
         if (!UserSession.IsConsultant)
         {
-            var btnPoint = Theme.CreateSecondaryButton("Pointer relevé", 125, 34);
-            btnPoint.Margin = new Padding(0, 0, 8, 4);
+            var btnPoint = Theme.CreateSecondaryButton("Pointer relevé", 128, 34);
+            btnPoint.Margin = new Padding(0, 0, 8, 0);
             btnPoint.Click += (_, _) => ToggleSelectedRapprochement();
-            flow.Controls.Add(btnPoint);
+            row2.Controls.Add(btnPoint);
 
-            var btnCancel = Theme.CreatePrimaryButton("Annuler / Suppr.", 135, 34);
+            var btnCancel = Theme.CreatePrimaryButton("Annuler / Suppr.", 138, 34);
             btnCancel.BackColor = Theme.DangerRed;
-            btnCancel.Margin = new Padding(0, 0, 0, 4);
+            btnCancel.Margin = new Padding(0, 0, 0, 0);
             btnCancel.Click += (_, _) => CancelOrDeleteSelected();
-            flow.Controls.Add(btnCancel);
+            row2.Controls.Add(btnCancel);
         }
 
-        bar.Controls.Add(flow);
+        bar.Controls.Add(row2);
+        bar.Controls.Add(row1);
 
         // Bandeau Rapprochement bancaire & Mobile Money
         var rapBar = Theme.CreateCardPanel(new Padding(16, 10, 16, 10));
         rapBar.Dock = DockStyle.Top;
         rapBar.Height = 44;
         _lblRapprochement.Dock = DockStyle.Fill;
+        _lblRapprochement.UseMnemonic = false;
         _lblRapprochement.Font = Theme.FontBodyBold;
         _lblRapprochement.ForeColor = Theme.TextPrimary;
         _lblRapprochement.TextAlign = ContentAlignment.MiddleLeft;

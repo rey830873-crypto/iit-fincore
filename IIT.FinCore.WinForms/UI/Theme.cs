@@ -46,6 +46,21 @@ public static class Theme
         if (root.Font != null && root.Font.Unit == GraphicsUnit.Point)
             root.Font = new Font(root.Font.FontFamily, root.Font.SizeInPoints * 96f / 72f, root.Font.Style, GraphicsUnit.Pixel);
 
+        if (root is Label lbl)
+            lbl.UseMnemonic = false;
+
+        if (root is FlowLayoutPanel flp && flp.AutoSize && flp.WrapContents && flp.Parent is Panel parentCard && parentCard.AutoSize)
+        {
+            parentCard.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            flp.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            parentCard.Resize += (_, _) =>
+            {
+                int avail = Math.Max(120, parentCard.ClientSize.Width - parentCard.Padding.Horizontal);
+                if (flp.MaximumSize.Width != avail)
+                    flp.MaximumSize = new Size(avail, 0);
+            };
+        }
+
         if (root is DataGridView dgv)
         {
             if (dgv.ColumnHeadersDefaultCellStyle.Font is { Unit: GraphicsUnit.Point } hf)
