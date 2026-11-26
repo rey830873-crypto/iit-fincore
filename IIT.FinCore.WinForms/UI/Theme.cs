@@ -259,8 +259,10 @@ public static class Theme
         grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(247, 249, 252);
         grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = TextPrimary;
         grid.ColumnHeadersDefaultCellStyle.Font = FontBodyBold;
-        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(10, 6, 10, 6);
-        grid.ColumnHeadersHeight = 42;
+        grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 6, 8, 6);
+        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        grid.ColumnHeadersHeight = 40;
         grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
 
         grid.DefaultCellStyle.Font = FontBody;
@@ -268,7 +270,7 @@ public static class Theme
         grid.DefaultCellStyle.BackColor = Color.White;
         grid.DefaultCellStyle.SelectionBackColor = GoldSoftBg;
         grid.DefaultCellStyle.SelectionForeColor = TextPrimary;
-        grid.DefaultCellStyle.Padding = new Padding(10, 0, 10, 0);
+        grid.DefaultCellStyle.Padding = new Padding(8, 0, 8, 0);
 
         grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(250, 251, 254);
 
@@ -279,10 +281,14 @@ public static class Theme
             {
                 col.HeaderText = col.HeaderText.Replace("_", " ");
                 var h = col.HeaderText.ToLowerInvariant();
-                if (h is "id" or "code") col.FillWeight = 50;
-                else if (h is "date" or "heure" or "type" or "statut" or "alerte" or "exécution") col.FillWeight = 82;
-                else if (h.Contains("libellé") || h.Contains("intitulé") || h.Contains("ventilation") || h.Contains("détails")) col.FillWeight = 175;
-                else if (h.Contains("structure") || h.Contains("période") || h.Contains("compte") || h.Contains("centre")) col.FillWeight = 135;
+                if (h is "id" or "code") col.FillWeight = 55;
+                else if (h is "date" or "heure") col.FillWeight = 88;
+                else if (h is "type" or "statut" or "pointée" or "alerte" or "exécution") col.FillWeight = 94;
+                else if (h.Contains("référence")) col.FillWeight = 112;
+                else if (h.Contains("montant") || h.Contains("solde")) col.FillWeight = 132;
+                else if (h.Contains("ventilation")) col.FillWeight = 195;
+                else if (h.Contains("libellé") || h.Contains("intitulé") || h.Contains("détails")) col.FillWeight = 180;
+                else if (h.Contains("structure") || h.Contains("période") || h.Contains("compte") || h.Contains("centre")) col.FillWeight = 128;
                 else col.FillWeight = 100;
             }
         };
@@ -293,17 +299,17 @@ public static class Theme
             if (e.Value == null) return;
             var text = e.Value.ToString()?.Trim() ?? "";
 
-            if (text is "VALIDEE" or "APPROUVEE" or "PAYE" or "Actif" or "Active" or "ACTIVE" or "ACTIF" or "Pointée" or "OUVERT")
+            if (text is "VALIDEE" or "Validée" or "APPROUVEE" or "Approuvée" or "PAYE" or "Payé" or "Actif" or "Active" or "ACTIVE" or "ACTIF" or "Pointée" or "OUVERT")
             {
                 e.CellStyle!.ForeColor = SuccessGreen;
                 e.CellStyle.Font = FontBodyBold;
             }
-            else if (text is "EN_ATTENTE" or "PARTIEL" or "BROUILLON" or "À pointer")
+            else if (text is "EN_ATTENTE" or "En attente" or "PARTIEL" or "Partiel" or "BROUILLON" or "À pointer")
             {
                 e.CellStyle!.ForeColor = GoldHover;
                 e.CellStyle.Font = FontBodyBold;
             }
-            else if (text is "REJETEE" or "IMPAYE" or "ANNULEE" or "Inactif" or "Inactive" or "Archivé" or "Désactivé" or "CLOTURE")
+            else if (text is "REJETEE" or "Rejetée" or "IMPAYE" or "Impayé" or "ANNULEE" or "Annulée" or "Inactif" or "Inactive" or "Archivé" or "Désactivé" or "CLOTURE")
             {
                 e.CellStyle!.ForeColor = DangerRed;
                 e.CellStyle.Font = FontBodyBold;

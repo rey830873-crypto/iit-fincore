@@ -276,13 +276,27 @@ public class UcTransactions : UserControl
         {
             Date = t.DateOperation.ToString("dd/MM/yyyy"),
             Référence = t.Reference,
-            Type = t.TypeTransaction,
+            Type = t.TypeTransaction switch
+            {
+                "RECETTE" => "Recette",
+                "DEPENSE" => "Dépense",
+                "TRANSFERT_ENTRANT" => "Transfert +",
+                "TRANSFERT_SORTANT" => "Transfert -",
+                _ => t.TypeTransaction
+            },
             Libellé = t.Libelle,
             Compte = t.CompteNom,
             Montant = (t.TypeTransaction is "RECETTE" or "TRANSFERT_ENTRANT" ? "+" : "-") + $"{t.Montant:N0} FCFA",
-            Ventilation_Analytique = t.CentresResume ?? "-",
+            Ventilation = t.CentresResume ?? "-",
             Pointée = t.EstRapprochee ? "Pointée" : "À pointer",
-            Statut = t.Statut
+            Statut = t.Statut switch
+            {
+                "VALIDEE" => "Validée",
+                "EN_ATTENTE" => "En attente",
+                "REJETEE" => "Rejetée",
+                "ANNULEE" => "Annulée",
+                _ => t.Statut
+            }
         }).ToList();
     }
 }
