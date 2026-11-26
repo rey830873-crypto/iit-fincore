@@ -358,7 +358,7 @@ public class UcCotisations : UserControl
 
         var p = _impayesList[idx];
         var reste = Math.Max(0, p.MontantDu - p.MontantPaye);
-        var msg = $"Bonjour {p.MembreNom},\n\nRappel de la trésorerie ({p.StructureNom}) : un solde de {reste:N0} FCFA reste à régler pour la cotisation « {p.CotisationNom} » (échéance : {p.DateEcheance:dd/MM/yyyy}).\n\nMerci pour votre régularisation !\n— IIT FINCORE";
+        var msg = $"Bonjour {p.MembreNom},\n\nRappel de la trésorerie ({p.StructureNom}) : un solde de {reste:N0} FCFA reste à régler pour la cotisation « {p.CotisationNom} » (échéance : {p.DateEcheance:dd/MM/yyyy}).\n\nMerci pour votre régularisation !\n- IIT FINCORE";
         Clipboard.SetText(msg);
         MessageBox.Show("Message de relance copié dans le presse-papiers ! Collez-le directement dans WhatsApp ou par e-mail.", "Relance prête", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }

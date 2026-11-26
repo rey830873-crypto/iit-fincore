@@ -111,7 +111,7 @@ public class UcStructures : UserControl
             s.Code,
             Structure = s.Nom,
             Type = s.TypeStructure,
-            Parente = s.ParentNom ?? "—",
+            Parente = s.ParentNom ?? "-",
             Email = s.EmailContact,
             Téléphone = s.Telephone,
             Statut = s.EstActif ? "Active" : "Inactive"
@@ -166,14 +166,14 @@ public class UcStructures : UserControl
 
         var s = _filtered[idx];
         var kpi = _repo.GetDashboardKpis(s.Id);
-        using var dlg = new FrmDetailsDialog($"Structure — {s.Nom}", new Dictionary<string, string>
+        using var dlg = new FrmDetailsDialog($"Structure - {s.Nom}", new Dictionary<string, string>
         {
             ["Code"] = s.Code,
             ["Nom"] = s.Nom,
             ["Type"] = s.TypeStructure,
             ["Structure parente"] = s.ParentNom ?? "Racine",
-            ["E-mail"] = s.EmailContact ?? "—",
-            ["Téléphone"] = s.Telephone ?? "—",
+            ["E-mail"] = s.EmailContact ?? "-",
+            ["Téléphone"] = s.Telephone ?? "-",
             ["Statut"] = s.EstActif ? "Active" : "Inactive",
             ["Solde cumulé"] = $"{kpi.SoldeGlobal:N0} FCFA",
             ["Recettes validées"] = $"{kpi.TotalRecettes:N0} FCFA",

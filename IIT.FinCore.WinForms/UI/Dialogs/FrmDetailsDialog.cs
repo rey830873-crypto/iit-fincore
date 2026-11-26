@@ -7,7 +7,7 @@ public class FrmDetailsDialog : Form
 {
     public FrmDetailsDialog(string title, Dictionary<string, string> fields, string? attachmentPath = null, List<(string Col1, string Col2, string Col3)>? subTable = null, string? subTableTitle = null)
     {
-        Text = $"IIT FINCORE — {title}";
+        Text = $"IIT FINCORE - {title}";
         Size = new Size(660, subTable != null ? 610 : 470);
         StartPosition = FormStartPosition.CenterParent;
         DoubleBuffered = true;
@@ -32,7 +32,7 @@ public class FrmDetailsDialog : Form
         foreach (var (k, v) in fields)
         {
             card.Controls.Add(new Label { Text = k + " :", Font = new Font("Segoe UI", 8.8F, FontStyle.Bold), ForeColor = Theme.TextMuted, Location = new Point(20, y), Size = new Size(190, 22) });
-            card.Controls.Add(new Label { Text = string.IsNullOrWhiteSpace(v) ? "—" : v, Font = Theme.FontBody, ForeColor = Theme.TextPrimary, Location = new Point(216, y), Size = new Size(380, 22) });
+            card.Controls.Add(new Label { Text = string.IsNullOrWhiteSpace(v) ? "-" : v, Font = Theme.FontBody, ForeColor = Theme.TextPrimary, Location = new Point(216, y), Size = new Size(380, 22) });
             y += 27;
         }
 

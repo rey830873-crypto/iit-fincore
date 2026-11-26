@@ -30,7 +30,7 @@ public class FrmLogin : Form
 
     public FrmLogin()
     {
-        Text = "IIT FINCORE — Connexion";
+        Text = "IIT FINCORE - Connexion";
         Icon = Theme.LoadAppIcon();
         Size = new Size(960, 600);
         StartPosition = FormStartPosition.CenterScreen;

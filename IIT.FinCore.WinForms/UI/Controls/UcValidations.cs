@@ -97,7 +97,7 @@ public class UcValidations : UserControl
             Montant = $"-{d.Montant:N0} FCFA",
             Demandeur = d.DemandeurNom,
             Statut = d.Statut,
-            Décision = d.CommentaireDecision ?? "—"
+            Décision = d.CommentaireDecision ?? "-"
         }).ToList();
     }
 

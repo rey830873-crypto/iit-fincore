@@ -168,10 +168,10 @@ public class UcTransactions : UserControl
             ["Mode de paiement"] = t.ModePaiement,
             ["Compte"] = t.CompteNom,
             ["Structure"] = t.StructureNom,
-            ["Catégorie"] = t.CategorieLibelle ?? "—",
+            ["Catégorie"] = t.CategorieLibelle ?? "-",
             ["Statut"] = t.Statut,
-            ["Saisi par"] = t.CreeParNom ?? "—",
-            ["Observations"] = t.Observations ?? "—"
+            ["Saisi par"] = t.CreeParNom ?? "-",
+            ["Observations"] = t.Observations ?? "-"
         };
 
         var sub = imps.Select(i => (i.CentreLibelle, $"{i.MontantImpute:N0} FCFA", $"{i.Pourcentage:N2} %")).ToList();
@@ -280,7 +280,7 @@ public class UcTransactions : UserControl
             Libellé = t.Libelle,
             Compte = t.CompteNom,
             Montant = (t.TypeTransaction is "RECETTE" or "TRANSFERT_ENTRANT" ? "+" : "-") + $"{t.Montant:N0} FCFA",
-            Ventilation_Analytique = t.CentresResume ?? "—",
+            Ventilation_Analytique = t.CentresResume ?? "-",
             Pointée = t.EstRapprochee ? "Pointée" : "À pointer",
             Statut = t.Statut
         }).ToList();

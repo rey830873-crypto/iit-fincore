@@ -4,7 +4,7 @@ using System.Drawing.Drawing2D;
 namespace IIT.FinCore.WinForms.UI;
 
 /// <summary>
-/// Design System Commercial IIT FINCORE — Inspiré du logo officiel (Royal Sapphire & Metallic Gold).
+/// Design System Commercial IIT FINCORE - Inspiré du logo officiel (Royal Sapphire & Metallic Gold).
 /// </summary>
 public static class Theme
 {

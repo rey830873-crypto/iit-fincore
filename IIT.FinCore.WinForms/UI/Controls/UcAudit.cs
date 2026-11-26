@@ -79,8 +79,8 @@ public class UcAudit : UserControl
             ["Utilisateur"] = j.UtilisateurNom,
             ["Module"] = j.Module,
             ["Action"] = j.Action,
-            ["Adresse IP"] = j.AdresseIp ?? "—",
-            ["Détails"] = j.Details ?? "—"
+            ["Adresse IP"] = j.AdresseIp ?? "-",
+            ["Détails"] = j.Details ?? "-"
         });
         dlg.ShowDialog(this);
     }

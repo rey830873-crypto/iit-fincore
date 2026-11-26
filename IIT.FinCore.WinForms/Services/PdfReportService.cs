@@ -182,7 +182,7 @@ public static class PdfReportService
                 // Pied de page numéroté
                 page.Footer().AlignCenter().Text(txt =>
                 {
-                    txt.Span($"{orgName} — Document officiel généré par IIT FINCORE   •   Page ").FontSize(8).FontColor(SlateHex);
+                    txt.Span($"{orgName} - Document officiel généré par IIT FINCORE   •   Page ").FontSize(8).FontColor(SlateHex);
                     txt.CurrentPageNumber().FontSize(8).Bold().FontColor(NavyHex);
                     txt.Span(" / ").FontSize(8).FontColor(SlateHex);
                     txt.TotalPages().FontSize(8).Bold().FontColor(NavyHex);
@@ -285,7 +285,7 @@ public static class PdfReportService
                 });
 
                 page.Footer().AlignCenter()
-                    .Text($"Document certifié IIT FINCORE — Généré le {DateTime.Now:dd/MM/yyyy HH:mm}")
+                    .Text($"Document certifié IIT FINCORE - Généré le {DateTime.Now:dd/MM/yyyy HH:mm}")
                     .FontSize(7.5f).FontColor(SlateHex);
             });
         }).GeneratePdf(outputPath);
@@ -350,7 +350,7 @@ public static class PdfReportService
                     });
 
                     col.Item().Text("Merci de bien vouloir régulariser votre situation auprès de la trésorerie (Espèces, Virement ou Mobile Money).").FontSize(9);
-                    col.Item().PaddingTop(8).AlignRight().Text("La Trésorerie — " + orgName).Bold().FontColor(NavyHex);
+                    col.Item().PaddingTop(8).AlignRight().Text("La Trésorerie - " + orgName).Bold().FontColor(NavyHex);
                 });
 
                 page.Footer().AlignCenter().Text("Avis généré automatiquement par IIT FINCORE").FontSize(7.5f).FontColor(SlateHex);

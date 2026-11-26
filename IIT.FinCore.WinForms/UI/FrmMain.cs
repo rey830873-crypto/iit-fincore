@@ -24,7 +24,7 @@ public class FrmMain : Form, IMessageFilter
     public FrmMain()
     {
         var roleLabel = UserSession.CurrentUser?.RoleNom ?? "";
-        Text = $"IIT FINCORE — Espace {roleLabel}";
+        Text = $"IIT FINCORE - Espace {roleLabel}";
         Icon = Theme.LoadAppIcon();
         Size = new Size(1340, 800);
         MinimumSize = new Size(1160, 720);
@@ -76,7 +76,7 @@ public class FrmMain : Form, IMessageFilter
                 _idleTimer.Stop();
                 Application.RemoveMessageFilter(this);
                 new Data.AuthRepository().LogActivity(UserSession.CurrentUser?.Id, "Verrouillage inactivité", "Sécurité", null, null, "Session expirée après 15 min d'inactivité");
-                MessageBox.Show("Votre session a expiré après 15 minutes d'inactivité par mesure de sécurité.", "IIT FINCORE — Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Votre session a expiré après 15 minutes d'inactivité par mesure de sécurité.", "IIT FINCORE - Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 UserSession.Clear();
                 RequestedLogout = true;
                 Close();
@@ -372,7 +372,7 @@ public class FrmMain : Form, IMessageFilter
         btnHelp.Click += (_, _) =>
         {
             MessageBox.Show(
-                "Prise en main rapide — IIT FINCORE\n\n" +
+                "Prise en main rapide - IIT FINCORE\n\n" +
                 "• Cliquez sur n'importe quelle carte KPI ou graphique du tableau de bord pour ouvrir le module correspondant.\n" +
                 "• Double-cliquez sur une ligne de tableau pour consulter ou agir directement.\n" +
                 "• Faites un clic droit sur un tableau pour copier une cellule ou une ligne.\n\n" +
@@ -384,7 +384,7 @@ public class FrmMain : Form, IMessageFilter
                 "  • Ctrl + 2   : Comptes de trésorerie\n" +
                 "  • Ctrl + 3   : Opérations & Transferts\n" +
                 "  • Ctrl + 4   : Rapports & Export PDF",
-                "IIT FINCORE — Aide & Raccourcis",
+                "IIT FINCORE - Aide & Raccourcis",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         };
@@ -473,10 +473,10 @@ public class FrmMain : Form, IMessageFilter
         _contentHost.Controls.Clear();
 
         string dashTitle = UserSession.IsAdmin
-            ? "Tableau de bord — Administration globale"
+            ? "Tableau de bord - Administration globale"
             : UserSession.IsTresorier
-                ? $"Tableau de bord — {UserSession.CurrentUser?.StructureNom}"
-                : "Tableau de bord — Consultation financière";
+                ? $"Tableau de bord - {UserSession.CurrentUser?.StructureNom}"
+                : "Tableau de bord - Consultation financière";
 
         string dashSub = UserSession.IsAdmin
             ? "Vue consolidée multi-structures et pilotage financier IIT FINCORE"

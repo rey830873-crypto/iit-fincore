@@ -13,7 +13,7 @@ public class FrmForgotPassword : Form
 
     public FrmForgotPassword()
     {
-        Text = "IIT FINCORE — Réinitialisation sécurisée";
+        Text = "IIT FINCORE - Réinitialisation sécurisée";
         Size = new Size(465, 485);
         StartPosition = FormStartPosition.CenterParent;
         DoubleBuffered = true;

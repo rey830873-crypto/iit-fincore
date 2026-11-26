@@ -53,7 +53,7 @@ public class CompteTresorerie
     public string Devise { get; set; } = "FCFA";
     public bool EstActif { get; set; } = true;
 
-    public override string ToString() => $"{NomCompte} ({StructureNom}) — {SoldeActuel:N0} {Devise}";
+    public override string ToString() => $"{NomCompte} ({StructureNom}) - {SoldeActuel:N0} {Devise}";
 }
 
 public class CategorieMouvement

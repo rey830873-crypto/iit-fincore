@@ -94,7 +94,7 @@ public class UcRapports : UserControl
             Compte = t.CompteNom,
             Structure = t.StructureNom,
             Montant = $"+{t.Montant:N0} FCFA",
-            Analytique = t.CentresResume ?? "—",
+            Analytique = t.CentresResume ?? "-",
             Statut = t.Statut
         }).ToList();
 
@@ -106,7 +106,7 @@ public class UcRapports : UserControl
             Compte = t.CompteNom,
             Structure = t.StructureNom,
             Montant = $"-{t.Montant:N0} FCFA",
-            Analytique = t.CentresResume ?? "—",
+            Analytique = t.CentresResume ?? "-",
             Statut = t.Statut
         }).ToList();
     }

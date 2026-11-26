@@ -41,7 +41,7 @@ public class FrmTransactionDialog : Form
 
     public FrmTransactionDialog(string initialType = "RECETTE")
     {
-        Text = "IIT FINCORE — Nouvelle opération";
+        Text = "IIT FINCORE - Nouvelle opération";
         Size = new Size(768, 760);
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.None;

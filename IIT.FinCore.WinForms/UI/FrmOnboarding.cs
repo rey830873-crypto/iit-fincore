@@ -5,7 +5,7 @@ namespace IIT.FinCore.WinForms.UI;
 
 /// <summary>
 /// Onboarding commercial haut de gamme (Design Éditorial Split-Screen) avec visuels HD,
-/// badges métriques flottants et 3 points clés par étape — adapté à chacun des 3 rôles.
+/// badges métriques flottants et 3 points clés par étape - adapté à chacun des 3 rôles.
 /// </summary>
 public class FrmOnboarding : Form
 {
@@ -38,7 +38,7 @@ public class FrmOnboarding : Form
     public FrmOnboarding(string? roleCode = null)
     {
         _slides = GetSlidesForRole(roleCode);
-        Text = "IIT FINCORE — Découverte";
+        Text = "IIT FINCORE - Découverte";
         Icon = Theme.LoadAppIcon();
         Size = new Size(980, 585);
         StartPosition = FormStartPosition.CenterScreen;

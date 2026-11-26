@@ -190,11 +190,11 @@ public class UcUtilisateurs : UserControl
         if (idx < 0 || idx >= _users.Count) return;
 
         var u = _users[idx];
-        using var dlg = new FrmDetailsDialog($"Utilisateur — {u.NomComplet}", new Dictionary<string, string>
+        using var dlg = new FrmDetailsDialog($"Utilisateur - {u.NomComplet}", new Dictionary<string, string>
         {
             ["Nom complet"] = u.NomComplet,
             ["Adresse e-mail"] = u.Email,
-            ["Téléphone"] = u.Telephone ?? "—",
+            ["Téléphone"] = u.Telephone ?? "-",
             ["Rôle"] = $"{u.RoleNom} ({u.RoleCode})",
             ["Structure"] = u.StructureNom ?? "Global",
             ["Statut"] = u.EstActif ? "Actif" : "Désactivé",

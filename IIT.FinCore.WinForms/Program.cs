@@ -30,7 +30,7 @@ static class Program
             MessageBox.Show(
                 "Impossible de se connecter à la base MySQL 'iit_fincore'.\n" +
                 "Vérifiez que WampServer (MySQL 3306) est bien démarré.\n\nDétail : " + ex.Message,
-                "IIT FINCORE — Erreur Base de Données",
+                "IIT FINCORE - Erreur Base de Données",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
             return;

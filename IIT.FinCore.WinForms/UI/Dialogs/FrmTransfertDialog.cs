@@ -16,7 +16,7 @@ public class FrmTransfertDialog : Form
 
     public FrmTransfertDialog()
     {
-        Text = "IIT FINCORE — Transfert entre comptes";
+        Text = "IIT FINCORE - Transfert entre comptes";
         Size = new Size(560, 470);
         StartPosition = FormStartPosition.CenterParent;
         DoubleBuffered = true;

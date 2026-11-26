@@ -199,7 +199,7 @@ public class UcPilotageAvance : UserControl
                 Exercice = e.Libelle,
                 Période = $"{e.DateDebut:dd/MM/yyyy} → {e.DateFin:dd/MM/yyyy}",
                 Solde_Clôture = e.SoldeCloture.HasValue ? $"{e.SoldeCloture:N0} FCFA" : (e.Statut == "CLOTURE" ? "Clôturé" : "En cours"),
-                Date_Clôture = e.DateCloture?.ToString("dd/MM/yyyy HH:mm") ?? "—",
+                Date_Clôture = e.DateCloture?.ToString("dd/MM/yyyy HH:mm") ?? "-",
                 Statut = e.Statut
             }).ToList();
         }

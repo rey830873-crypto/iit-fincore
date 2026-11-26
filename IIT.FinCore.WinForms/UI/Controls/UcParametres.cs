@@ -70,7 +70,7 @@ public class UcParametres : UserControl
         tabProfil.Controls.Add(cardProfil);
         tabs.TabPages.Add(tabProfil);
 
-        // Onglet 2 : Paramètres généraux (Admin) — 100% responsive FlowLayoutPanel
+        // Onglet 2 : Paramètres généraux (Admin) - 100% responsive FlowLayoutPanel
         if (UserSession.IsAdmin)
         {
             var tabParams = new TabPage("Paramètres généraux") { BackColor = Theme.PageBg, Padding = new Padding(12) };
@@ -202,7 +202,7 @@ public class UcParametres : UserControl
 
             File.WriteAllText(sfd.FileName, sqlDump, System.Text.Encoding.UTF8);
             _auth.LogActivity(UserSession.CurrentUser!.Id, "Sauvegarde MySQL", "Paramètres", "iit_fincore", null, Path.GetFileName(sfd.FileName));
-            MessageBox.Show($"Sauvegarde MySQL complète enregistrée :\n{sfd.FileName}", "IIT FINCORE — Sauvegarde réussie", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"Sauvegarde MySQL complète enregistrée :\n{sfd.FileName}", "IIT FINCORE - Sauvegarde réussie", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {

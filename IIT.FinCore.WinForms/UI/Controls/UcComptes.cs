@@ -181,13 +181,13 @@ public class UcComptes : UserControl
         if (idx < 0 || idx >= _filtered.Count) return;
 
         var c = _filtered[idx];
-        using var dlg = new FrmDetailsDialog($"Compte — {c.NomCompte}", new Dictionary<string, string>
+        using var dlg = new FrmDetailsDialog($"Compte - {c.NomCompte}", new Dictionary<string, string>
         {
             ["Nom du compte"] = c.NomCompte,
             ["Structure"] = c.StructureNom,
             ["Type de compte"] = c.TypeCompte,
-            ["Établissement"] = c.Etablissement ?? "—",
-            ["N° de référence"] = c.NumeroReference ?? "—",
+            ["Établissement"] = c.Etablissement ?? "-",
+            ["N° de référence"] = c.NumeroReference ?? "-",
             ["Solde initial"] = $"{c.SoldeInitial:N0} {c.Devise}",
             ["Solde actuel"] = $"{c.SoldeActuel:N0} {c.Devise}",
             ["Statut"] = c.EstActif ? "Actif" : "Archivé"
