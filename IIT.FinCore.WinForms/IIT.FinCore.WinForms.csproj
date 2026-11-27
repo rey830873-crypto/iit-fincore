@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -44,4 +44,146 @@
     </None>
   </ItemGroup>
 
+
+  <!-- WinForms Designer SubTypes -->
+  <ItemGroup>
+    <Compile Update="UI\Controls\UcAudit.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcAudit.Designer.cs">
+      <DependentUpon>UcAudit.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcBudgets.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcBudgets.Designer.cs">
+      <DependentUpon>UcBudgets.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcCentresAnalytiques.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcCentresAnalytiques.Designer.cs">
+      <DependentUpon>UcCentresAnalytiques.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcComptes.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcComptes.Designer.cs">
+      <DependentUpon>UcComptes.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcCotisations.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcCotisations.Designer.cs">
+      <DependentUpon>UcCotisations.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcDashboard.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcDashboard.Designer.cs">
+      <DependentUpon>UcDashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcParametres.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcParametres.Designer.cs">
+      <DependentUpon>UcParametres.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcPilotageAvance.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcPilotageAvance.Designer.cs">
+      <DependentUpon>UcPilotageAvance.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcRapports.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcRapports.Designer.cs">
+      <DependentUpon>UcRapports.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcStructures.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcStructures.Designer.cs">
+      <DependentUpon>UcStructures.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcTransactions.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcTransactions.Designer.cs">
+      <DependentUpon>UcTransactions.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcUtilisateurs.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcUtilisateurs.Designer.cs">
+      <DependentUpon>UcUtilisateurs.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Controls\UcValidations.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="UI\Controls\UcValidations.Designer.cs">
+      <DependentUpon>UcValidations.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmDetailsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmDetailsDialog.Designer.cs">
+      <DependentUpon>FrmDetailsDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmForgotPassword.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmForgotPassword.Designer.cs">
+      <DependentUpon>FrmForgotPassword.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmNotificationCenter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmNotificationCenter.Designer.cs">
+      <DependentUpon>FrmNotificationCenter.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmToastNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmToastNotification.Designer.cs">
+      <DependentUpon>FrmToastNotification.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmTransactionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmTransactionDialog.Designer.cs">
+      <DependentUpon>FrmTransactionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmTransfertDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\Dialogs\FrmTransfertDialog.Designer.cs">
+      <DependentUpon>FrmTransfertDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\FrmLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\FrmLogin.Designer.cs">
+      <DependentUpon>FrmLogin.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\FrmMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\FrmMain.Designer.cs">
+      <DependentUpon>FrmMain.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\FrmOnboarding.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\FrmOnboarding.Designer.cs">
+      <DependentUpon>FrmOnboarding.cs</DependentUpon>
+    </Compile>
+    <Compile Update="UI\FrmSplash.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\FrmSplash.Designer.cs">
+      <DependentUpon>FrmSplash.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>
