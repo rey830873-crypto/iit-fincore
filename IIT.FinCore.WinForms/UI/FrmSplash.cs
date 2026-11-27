@@ -28,26 +28,34 @@ public partial class FrmSplash : Form
 
         Theme.ApplyRoundedRegion(this, 18);
 
+        const double durationMs = 7000.0; // Durée exacte : 7 secondes
+        var sw = new System.Diagnostics.Stopwatch();
+
         _timer.Interval = 16;
         _timer.Tick += (_, _) =>
         {
-            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.25);
-            _progress = Math.Min(100f, _progress + 8f);
+            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.08);
+            _progress = Math.Min(100f, (float)(sw.ElapsedMilliseconds / durationMs * 100.0));
 
-            if (_progress > 35 && _progress < 75)
+            if (_progress < 25)
+                _statusText = "Initialisation du moteur financier...";
+            else if (_progress < 55)
                 _statusText = "Connexion sécurisée à la base MySQL...";
-            else if (_progress >= 75)
+            else if (_progress < 85)
                 _statusText = "Chargement des tableaux de bord & rôles...";
+            else
+                _statusText = "Préparation de l'espace IIT FINCORE...";
 
             Invalidate();
 
-            if (_progress >= 100f)
+            if (sw.ElapsedMilliseconds >= durationMs)
             {
                 _timer.Stop();
                 Close();
             }
         };
-        Shown += (_, _) => _timer.Start();
+        Shown += (_, _) => { sw.Start(); _timer.Start(); };
+        FormClosed += (_, _) => { _timer.Stop(); _timer.Dispose(); };
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -74,7 +82,7 @@ public partial class FrmSplash : Form
 
         // Anneaux orbitaux 3D (moitié arrière derrière le logo)
         var logoCenter = new PointF(Width / 2f, 112f);
-        float orbitAngle = _progress * 0.075f;
+        float orbitAngle = _progress * 0.16f;
         Theme.Draw3DOrbitalRings(g, logoCenter, 86f, orbitAngle, frontHalf: false);
 
         // Halo doré discret derrière le logo
