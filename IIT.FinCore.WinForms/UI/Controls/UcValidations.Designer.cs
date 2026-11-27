@@ -52,6 +52,7 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.lblDesignModuleTitle.Name = "lblDesignModuleTitle";
             this.lblDesignModuleTitle.Size = new System.Drawing.Size(580, 30);
             this.lblDesignModuleTitle.TabIndex = 0;
+            this.lblDesignModuleTitle.UseMnemonic = false;
             this.lblDesignModuleTitle.Text = "Approbation des demandes de dépenses";
             //
             // btnDesignPrimary
