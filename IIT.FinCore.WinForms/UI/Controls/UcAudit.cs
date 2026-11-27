@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public class UcAudit : UserControl
+public partial class UcAudit : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
@@ -15,6 +15,10 @@ public class UcAudit : UserControl
 
     public UcAudit()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         var card = Theme.CreateCardPanel();
         card.Dock = DockStyle.Fill;

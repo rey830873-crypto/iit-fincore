@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public class UcCentresAnalytiques : UserControl
+public partial class UcCentresAnalytiques : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridCentres = Theme.CreateStyledGrid();
@@ -18,6 +18,10 @@ public class UcCentresAnalytiques : UserControl
 
     public UcCentresAnalytiques()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
         LoadData();

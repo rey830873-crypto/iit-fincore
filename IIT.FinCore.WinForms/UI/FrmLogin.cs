@@ -8,7 +8,7 @@ namespace IIT.FinCore.WinForms.UI;
 /// <summary>
 /// Maquette 02 : Écran de connexion commercial Premium IIT FINCORE (Royal Sapphire & Metallic Gold).
 /// </summary>
-public class FrmLogin : Form
+public partial class FrmLogin : Form
 {
     private readonly AuthRepository _authRepo = new();
     private readonly TextBox _txtEmail = new();
@@ -30,6 +30,11 @@ public class FrmLogin : Form
 
     public FrmLogin()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         Text = "IIT FINCORE - Connexion";
         Icon = Theme.LoadAppIcon();
         Size = new Size(960, 600);

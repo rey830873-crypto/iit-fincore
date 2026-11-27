@@ -9,7 +9,7 @@ namespace IIT.FinCore.WinForms.UI.Dialogs;
 /// <summary>
 /// Fenêtre moderne sans bordure pour la saisie Recette / Dépense avec Multi-Ventilation Analytique.
 /// </summary>
-public class FrmTransactionDialog : Form
+public partial class FrmTransactionDialog : Form
 {
     private readonly TreasuryRepository _repo = new();
     private string _selectedType = "RECETTE";
@@ -39,8 +39,15 @@ public class FrmTransactionDialog : Form
     private bool _dragging;
     private Point _dragStart;
 
-    public FrmTransactionDialog(string initialType = "RECETTE")
+    public FrmTransactionDialog() : this("RECETTE") { }
+
+    public FrmTransactionDialog(string initialType)
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         Text = "IIT FINCORE - Nouvelle opération";
         Size = new Size(768, 760);
         StartPosition = FormStartPosition.CenterParent;

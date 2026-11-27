@@ -7,19 +7,29 @@ namespace IIT.FinCore.WinForms.UI.Dialogs;
 /// Notification Toast discrète (coin inférieur droit) avec fondu fluide,
 /// sans jamais voler le focus clavier à l'utilisateur.
 /// </summary>
-public class FrmToastNotification : Form
+public partial class FrmToastNotification : Form
 {
-    private readonly string _title;
-    private readonly string _message;
-    private readonly Color _accent;
+    private readonly string _title = "";
+    private readonly string _message = "";
+    private readonly Color _accent = Theme.GoldLight;
     private readonly Action? _onClick;
     private readonly System.Windows.Forms.Timer _lifeTimer = new();
     private bool _fadingOut;
 
     protected override bool ShowWithoutActivation => true;
 
+    public FrmToastNotification()
+    {
+        InitializeComponent();
+    }
+
     public FrmToastNotification(Form owner, string title, string message, string niveau = "ALERTE", Action? onClick = null)
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         _title = title;
         _message = message;
         _onClick = onClick;

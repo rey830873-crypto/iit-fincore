@@ -7,7 +7,7 @@ namespace IIT.FinCore.WinForms.UI.Controls;
 /// <summary>
 /// Maquettes 44 (Profil utilisateur) & 45 (Paramètres généraux).
 /// </summary>
-public class UcParametres : UserControl
+public partial class UcParametres : UserControl
 {
     private readonly AuthRepository _auth = new();
     private readonly TreasuryRepository _repo = new();
@@ -20,6 +20,10 @@ public class UcParametres : UserControl
 
     public UcParametres()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
     }

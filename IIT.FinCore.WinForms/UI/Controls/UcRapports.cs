@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public class UcRapports : UserControl
+public partial class UcRapports : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridSynthese = Theme.CreateStyledGrid();
@@ -14,6 +14,10 @@ public class UcRapports : UserControl
 
     public UcRapports()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
         LoadData();

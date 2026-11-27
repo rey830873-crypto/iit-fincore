@@ -6,7 +6,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public class UcStructures : UserControl
+public partial class UcStructures : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
@@ -23,6 +23,10 @@ public class UcStructures : UserControl
 
     public UcStructures()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
         LoadData();

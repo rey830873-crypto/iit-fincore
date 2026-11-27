@@ -6,7 +6,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public class UcUtilisateurs : UserControl
+public partial class UcUtilisateurs : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridUsers = Theme.CreateStyledGrid();
@@ -27,6 +27,10 @@ public class UcUtilisateurs : UserControl
 
     public UcUtilisateurs()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
         LoadData();

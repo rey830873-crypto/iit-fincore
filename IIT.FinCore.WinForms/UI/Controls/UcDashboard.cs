@@ -13,7 +13,7 @@ namespace IIT.FinCore.WinForms.UI.Controls;
 /// - Trésorier : Opérations de sa structure (KPI + Mes comptes + Dernières opérations)
 /// - Consultant : Analyse & Reporting (KPI Résultat Net + Graphiques + Synthèse analytique)
 /// </summary>
-public class UcDashboard : UserControl
+public partial class UcDashboard : UserControl
 {
     private readonly TreasuryRepository _repo = new();
     private readonly ComboBox _cboStructure = new();
@@ -32,6 +32,10 @@ public class UcDashboard : UserControl
 
     public UcDashboard()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+        Controls.Clear();
         BackColor = Theme.PageBg;
         BuildLayout();
         InitStructureFilter();

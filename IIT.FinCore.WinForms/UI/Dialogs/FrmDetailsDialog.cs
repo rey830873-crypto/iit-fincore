@@ -3,10 +3,20 @@ using System.Drawing;
 
 namespace IIT.FinCore.WinForms.UI.Dialogs;
 
-public class FrmDetailsDialog : Form
+public partial class FrmDetailsDialog : Form
 {
+    public FrmDetailsDialog()
+    {
+        InitializeComponent();
+    }
+
     public FrmDetailsDialog(string title, Dictionary<string, string> fields, string? attachmentPath = null, List<(string Col1, string Col2, string Col3)>? subTable = null, string? subTableTitle = null)
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         Text = $"IIT FINCORE - {title}";
         Size = new Size(660, subTable != null ? 610 : 470);
         StartPosition = FormStartPosition.CenterParent;

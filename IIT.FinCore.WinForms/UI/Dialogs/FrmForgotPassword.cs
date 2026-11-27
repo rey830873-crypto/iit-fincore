@@ -3,7 +3,7 @@ using IIT.FinCore.WinForms.Data;
 
 namespace IIT.FinCore.WinForms.UI.Dialogs;
 
-public class FrmForgotPassword : Form
+public partial class FrmForgotPassword : Form
 {
     private readonly AuthRepository _auth = new();
     private readonly TextBox _txtEmail = new();
@@ -13,6 +13,11 @@ public class FrmForgotPassword : Form
 
     public FrmForgotPassword()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         Text = "IIT FINCORE - Réinitialisation sécurisée";
         Size = new Size(465, 485);
         StartPosition = FormStartPosition.CenterParent;

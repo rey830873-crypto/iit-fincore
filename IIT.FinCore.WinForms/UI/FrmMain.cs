@@ -6,7 +6,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI;
 
-public class FrmMain : Form, IMessageFilter
+public partial class FrmMain : Form, IMessageFilter
 {
     public bool RequestedLogout { get; private set; }
 
@@ -28,6 +28,11 @@ public class FrmMain : Form, IMessageFilter
 
     public FrmMain()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         var roleLabel = UserSession.CurrentUser?.RoleNom ?? "";
         Text = $"IIT FINCORE - Espace {roleLabel}";
         Icon = Theme.LoadAppIcon();

@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Dialogs;
 
-public class FrmTransfertDialog : Form
+public partial class FrmTransfertDialog : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly ComboBox _cboSource = new();
@@ -16,6 +16,11 @@ public class FrmTransfertDialog : Form
 
     public FrmTransfertDialog()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         Text = "IIT FINCORE - Transfert entre comptes";
         Size = new Size(560, 470);
         StartPosition = FormStartPosition.CenterParent;

@@ -6,7 +6,7 @@ namespace IIT.FinCore.WinForms.UI;
 /// <summary>
 /// Maquette 01 : Écran d'accueil commercial IIT FINCORE avec logo officiel et barre de progression or.
 /// </summary>
-public class FrmSplash : Form
+public partial class FrmSplash : Form
 {
     private readonly System.Windows.Forms.Timer _timer = new();
     private float _progress;
@@ -14,6 +14,11 @@ public class FrmSplash : Form
 
     public FrmSplash()
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        pnlSplashCanvas.Visible = false;
         FormBorderStyle = FormBorderStyle.None;
         Icon = Theme.LoadAppIcon();
         StartPosition = FormStartPosition.CenterScreen;

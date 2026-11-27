@@ -11,17 +11,24 @@ namespace IIT.FinCore.WinForms.UI.Dialogs;
 /// Filtres (Toutes / Non lues / Critiques), cartes interactives avec barre de gravité,
 /// suppression individuelle, nettoyage des lues, partage WhatsApp 1-clic et navigation directe.
 /// </summary>
-public class FrmNotificationCenter : Form
+public partial class FrmNotificationCenter : Form
 {
     private readonly NotificationService _service = new();
-    private readonly Action<string> _onNavigate;
+    private readonly Action<string> _onNavigate = _ => { };
     private readonly FlowLayoutPanel _feed = new();
     private readonly List<Button> _filterBtns = new();
     private List<NotificationItem> _all = new();
     private string _activeFilter = "ALL"; // ALL, UNREAD, CRITIQUE
 
+    public FrmNotificationCenter() : this(_ => { }) { }
+
     public FrmNotificationCenter(Action<string> onNavigate)
     {
+        InitializeComponent();
+        if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
+            return;
+
+        Controls.Clear();
         _onNavigate = onNavigate;
         Text = "IIT FINCORE - Centre de Notifications";
         Size = new Size(630, 640);
