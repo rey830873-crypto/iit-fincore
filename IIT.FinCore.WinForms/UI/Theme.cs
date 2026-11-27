@@ -166,8 +166,19 @@ public static class Theme
     /// </summary>
     public static void MakeLayoutContainersTransparent(Control root)
     {
-        if (root.BackColor == PageBg)
+        if (root is Form)
+        {
+            var lightBg = LoadLightBackground();
+            if (lightBg != null)
+            {
+                root.BackgroundImage = lightBg;
+                root.BackgroundImageLayout = ImageLayout.Stretch;
+            }
+        }
+        else if (root.BackColor == PageBg)
+        {
             root.BackColor = Color.Transparent;
+        }
 
         foreach (Control child in root.Controls)
         {
