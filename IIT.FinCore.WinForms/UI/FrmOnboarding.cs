@@ -446,7 +446,7 @@ public partial class FrmOnboarding : Form
         _ => new Slide[]
         {
             new("onboarding_1.jpg", "BIENVENUE  •  01 / 03",
-                "IIT FINCORE v2.0", "Solution professionnelle de gestion de trésorerie associative",
+                "IIT FINCORE", "Solution professionnelle de gestion de trésorerie associative",
                 "Pilotez tous vos comptes\nen temps réel",
                 "Centralisez vos banques, caisses espèces et Mobile Money dans une interface élégante.",
                 new[]
