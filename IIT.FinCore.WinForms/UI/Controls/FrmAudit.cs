@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcAudit : UserControl
+public partial class FrmAudit : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
@@ -13,7 +13,7 @@ public partial class UcAudit : UserControl
     private List<JournalActiviteItem> _allLogs = new();
     private List<JournalActiviteItem> _filtered = new();
 
-    public UcAudit()
+    public FrmAudit()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

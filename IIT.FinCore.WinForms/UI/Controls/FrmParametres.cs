@@ -7,7 +7,7 @@ namespace IIT.FinCore.WinForms.UI.Controls;
 /// <summary>
 /// Maquettes 44 (Profil utilisateur) & 45 (Paramètres généraux).
 /// </summary>
-public partial class UcParametres : UserControl
+public partial class FrmParametres : Form
 {
     private readonly AuthRepository _auth = new();
     private readonly TreasuryRepository _repo = new();
@@ -18,7 +18,7 @@ public partial class UcParametres : UserControl
     private readonly TextBox _txtCle = new();
     private readonly TextBox _txtValeur = new();
 
-    public UcParametres()
+    public FrmParametres()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
@@ -67,7 +67,7 @@ public partial class UcParametres : UserControl
         btnReplayGuide.Click += (_, _) =>
         {
             using var guide = new FrmOnboarding(UserSession.CurrentUser?.RoleCode);
-            guide.ShowDialog(FindForm());
+            guide.ShowDialog(TopLevelControl as IWin32Window ?? this);
         };
 
         cardProfil.Controls.AddRange(new Control[] { _txtOldPwd, _txtNewPwd, _txtConfirmPwd, btnPwd, btnReplayGuide });
@@ -151,7 +151,7 @@ public partial class UcParametres : UserControl
         btnTestToast.Click += (_, _) =>
         {
             if (chkSound.Checked) System.Media.SystemSounds.Exclamation.Play();
-            if (FindForm() is Form owner)
+            if (TopLevelControl is Form owner)
             {
                 var toast = new Dialogs.FrmToastNotification(
                     owner,

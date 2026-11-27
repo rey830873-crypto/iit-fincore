@@ -19,7 +19,7 @@ public partial class FrmMain : Form, IMessageFilter
     private readonly Label _lblPageTitle = new();
     private readonly Label _lblPageSubtitle = new();
     private readonly Dictionary<string, Button> _navButtons = new();
-    private readonly Dictionary<string, (string Title, string Subtitle, UserControl Control)> _viewCache = new();
+    private readonly Dictionary<string, (string Title, string Subtitle, Form Control)> _viewCache = new();
     private static readonly Dictionary<Type, MethodInfo?> _refreshMethodCache = new();
     private readonly System.Windows.Forms.Timer _idleTimer = new();
     private readonly System.Windows.Forms.Timer _notifTimer = new();
@@ -808,28 +808,31 @@ public partial class FrmMain : Form, IMessageFilter
 
             page = key switch
             {
-                "dashboard"    => (dashTitle, dashSub, new UcDashboard()),
-                "pilotage"     => ("Prévisions Cash-Flow & Clôture", "Projection de trésorerie à 6 mois, charges récurrentes et clôture d'exercice", new UcPilotageAvance()),
-                "structures"   => ("Structures", "Associations, clubs et entités rattachées", new UcStructures()),
-                "comptes"      => ("Comptes de trésorerie", UserSession.IsConsultant ? "Consultation des soldes en lecture seule" : "Banques, caisses et comptes Mobile Money", new UcComptes()),
-                "transactions" => ("Mouvements de trésorerie", UserSession.IsConsultant ? "Journal des opérations en lecture seule" : "Recettes, dépenses multi-ventilées et transferts entre comptes", new UcTransactions()),
-                "centres"      => ("Centres d'imputation analytiques", "Répartition des recettes et dépenses par projet / activité", new UcCentresAnalytiques()),
-                "budgets"      => ("Budgets & Suivi budgétaire", "Enveloppes prévisionnelles et taux d'exécution", new UcBudgets()),
-                "validations"  => (UserSession.IsAdmin ? "Approbation des demandes" : "Mes demandes de validation", UserSession.IsAdmin ? "Validez ou rejetez les dépenses soumises par les trésoriers" : "Suivi de vos dépenses soumises à validation", new UcValidations()),
-                "cotisations"  => ("Cotisations", "Campagnes, règlements des membres et suivi des impayés", new UcCotisations()),
-                "rapports"     => ("Rapports & Exportation", "Synthèse financière, recettes, dépenses et export CSV", new UcRapports()),
-                "utilisateurs" => ("Utilisateurs, Rôles & Permissions", "Gestion des accès Administrateur, Trésorier et Consultant", new UcUtilisateurs()),
-                "audit"        => ("Journal des activités (Audit)", "Traçabilité complète des actions effectuées", new UcAudit()),
-                "parametres"   => (UserSession.IsAdmin ? "Profil & Paramètres généraux" : "Mon Profil", "Informations personnelles et sécurité du compte", new UcParametres()),
-                _              => (dashTitle, dashSub, new UcDashboard())
+                "dashboard"    => (dashTitle, dashSub, new FrmDashboard()),
+                "pilotage"     => ("Prévisions Cash-Flow & Clôture", "Projection de trésorerie à 6 mois, charges récurrentes et clôture d'exercice", new FrmPilotageAvance()),
+                "structures"   => ("Structures", "Associations, clubs et entités rattachées", new FrmStructures()),
+                "comptes"      => ("Comptes de trésorerie", UserSession.IsConsultant ? "Consultation des soldes en lecture seule" : "Banques, caisses et comptes Mobile Money", new FrmComptes()),
+                "transactions" => ("Mouvements de trésorerie", UserSession.IsConsultant ? "Journal des opérations en lecture seule" : "Recettes, dépenses multi-ventilées et transferts entre comptes", new FrmTransactions()),
+                "centres"      => ("Centres d'imputation analytiques", "Répartition des recettes et dépenses par projet / activité", new FrmCentresAnalytiques()),
+                "budgets"      => ("Budgets & Suivi budgétaire", "Enveloppes prévisionnelles et taux d'exécution", new FrmBudgets()),
+                "validations"  => (UserSession.IsAdmin ? "Approbation des demandes" : "Mes demandes de validation", UserSession.IsAdmin ? "Validez ou rejetez les dépenses soumises par les trésoriers" : "Suivi de vos dépenses soumises à validation", new FrmValidations()),
+                "cotisations"  => ("Cotisations", "Campagnes, règlements des membres et suivi des impayés", new FrmCotisations()),
+                "rapports"     => ("Rapports & Exportation", "Synthèse financière, recettes, dépenses et export CSV", new FrmRapports()),
+                "utilisateurs" => ("Utilisateurs, Rôles & Permissions", "Gestion des accès Administrateur, Trésorier et Consultant", new FrmUtilisateurs()),
+                "audit"        => ("Journal des activités (Audit)", "Traçabilité complète des actions effectuées", new FrmAudit()),
+                "parametres"   => (UserSession.IsAdmin ? "Profil & Paramètres généraux" : "Mon Profil", "Informations personnelles et sécurité du compte", new FrmParametres()),
+                _              => (dashTitle, dashSub, new FrmDashboard())
             };
 
+            page.Control.TopLevel = false;
+            page.Control.FormBorderStyle = FormBorderStyle.None;
             page.Control.Dock = DockStyle.Fill;
             Theme.UpgradeTabControls(page.Control);
             Theme.UpgradeAllTextBoxes(page.Control);
             Theme.MakeLayoutContainersTransparent(page.Control);
             Theme.ApplyCrispPixelFonts(page.Control);
             _contentHost.Controls.Add(page.Control);
+            page.Control.Show();
             _viewCache[key] = page;
             created = true;
         }
@@ -852,7 +855,7 @@ public partial class FrmMain : Form, IMessageFilter
         RefreshNotificationBadge();
     }
 
-    private static void RefreshCachedViewData(UserControl control)
+    private static void RefreshCachedViewData(Form control)
     {
         var type = control.GetType();
         if (!_refreshMethodCache.TryGetValue(type, out var method))

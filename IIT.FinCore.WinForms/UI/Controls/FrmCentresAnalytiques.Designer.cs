@@ -1,7 +1,7 @@
 #nullable disable
 namespace IIT.FinCore.WinForms.UI.Controls
 {
-    partial class UcCentresAnalytiques
+    partial class FrmCentresAnalytiques
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.Panel pnlDesignToolbar;
@@ -103,14 +103,15 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.dgvDesignPreview.Size = new System.Drawing.Size(996, 552);
             this.dgvDesignPreview.TabIndex = 0;
             //
-            // UcCentresAnalytiques
+            // FrmCentresAnalytiques
             //
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.Color.FromArgb(242, 245, 250);
             this.Controls.Add(this.pnlDesignCard);
             this.Controls.Add(this.pnlDesignToolbar);
-            this.Name = "UcCentresAnalytiques";
-            this.Size = new System.Drawing.Size(1020, 640);
+            this.Name = "FrmCentresAnalytiques";
+            this.Text = "IIT FINCORE - CentresAnalytiques";
+            this.ClientSize = new System.Drawing.Size(1020, 640);
             this.pnlDesignToolbar.ResumeLayout(false);
             this.pnlDesignCard.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDesignPreview)).EndInit();

@@ -1,7 +1,7 @@
 #nullable disable
 namespace IIT.FinCore.WinForms.UI.Controls
 {
-    partial class UcBudgets
+    partial class FrmCotisations
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.Panel pnlDesignToolbar;
@@ -53,7 +53,7 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.lblDesignModuleTitle.Size = new System.Drawing.Size(580, 30);
             this.lblDesignModuleTitle.TabIndex = 0;
             this.lblDesignModuleTitle.UseMnemonic = false;
-            this.lblDesignModuleTitle.Text = "Budgets & Alertes de dépassement";
+            this.lblDesignModuleTitle.Text = "Cotisations, Membres & Relances";
             //
             // btnDesignPrimary
             //
@@ -66,7 +66,7 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.btnDesignPrimary.Name = "btnDesignPrimary";
             this.btnDesignPrimary.Size = new System.Drawing.Size(150, 34);
             this.btnDesignPrimary.TabIndex = 1;
-            this.btnDesignPrimary.Text = "+ Nouveau budget";
+            this.btnDesignPrimary.Text = "+ Campagne";
             this.btnDesignPrimary.UseVisualStyleBackColor = false;
             //
             // btnDesignSecondary
@@ -80,7 +80,7 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.btnDesignSecondary.Name = "btnDesignSecondary";
             this.btnDesignSecondary.Size = new System.Drawing.Size(150, 34);
             this.btnDesignSecondary.TabIndex = 2;
-            this.btnDesignSecondary.Text = "Modifier";
+            this.btnDesignSecondary.Text = "Relance WhatsApp";
             this.btnDesignSecondary.UseVisualStyleBackColor = false;
             //
             // pnlDesignCard
@@ -103,14 +103,15 @@ namespace IIT.FinCore.WinForms.UI.Controls
             this.dgvDesignPreview.Size = new System.Drawing.Size(996, 552);
             this.dgvDesignPreview.TabIndex = 0;
             //
-            // UcBudgets
+            // FrmCotisations
             //
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.Color.FromArgb(242, 245, 250);
             this.Controls.Add(this.pnlDesignCard);
             this.Controls.Add(this.pnlDesignToolbar);
-            this.Name = "UcBudgets";
-            this.Size = new System.Drawing.Size(1020, 640);
+            this.Name = "FrmCotisations";
+            this.Text = "IIT FINCORE - Cotisations";
+            this.ClientSize = new System.Drawing.Size(1020, 640);
             this.pnlDesignToolbar.ResumeLayout(false);
             this.pnlDesignCard.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDesignPreview)).EndInit();

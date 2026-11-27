@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcCotisations : UserControl
+public partial class FrmCotisations : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridCampagnes = Theme.CreateStyledGrid();
@@ -28,7 +28,7 @@ public partial class UcCotisations : UserControl
     private List<PaiementCotisationItem> _impayesList = new();
     private List<CotisationItem> _campagnesList = new();
 
-    public UcCotisations()
+    public FrmCotisations()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

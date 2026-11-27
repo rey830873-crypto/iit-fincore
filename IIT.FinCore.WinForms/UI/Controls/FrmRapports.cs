@@ -5,14 +5,14 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcRapports : UserControl
+public partial class FrmRapports : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridSynthese = Theme.CreateStyledGrid();
     private readonly DataGridView _gridRecettes = Theme.CreateStyledGrid();
     private readonly DataGridView _gridDepenses = Theme.CreateStyledGrid();
 
-    public UcRapports()
+    public FrmRapports()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

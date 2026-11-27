@@ -4,7 +4,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcBudgets : UserControl
+public partial class FrmBudgets : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
@@ -18,7 +18,7 @@ public partial class UcBudgets : UserControl
     private List<Models.SuiviBudgetaireRow> _budgetsList = new();
     private int? _editingId;
 
-    public UcBudgets()
+    public FrmBudgets()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

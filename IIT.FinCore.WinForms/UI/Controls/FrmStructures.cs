@@ -6,7 +6,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcStructures : UserControl
+public partial class FrmStructures : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
@@ -21,7 +21,7 @@ public partial class UcStructures : UserControl
     private List<Structure> _filtered = new();
     private int? _editingId;
 
-    public UcStructures()
+    public FrmStructures()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

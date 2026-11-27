@@ -13,7 +13,7 @@ namespace IIT.FinCore.WinForms.UI.Controls;
 /// - Trésorier : Opérations de sa structure (KPI + Mes comptes + Dernières opérations)
 /// - Consultant : Analyse & Reporting (KPI Résultat Net + Graphiques + Synthèse analytique)
 /// </summary>
-public partial class UcDashboard : UserControl
+public partial class FrmDashboard : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly ComboBox _cboStructure = new();
@@ -30,7 +30,7 @@ public partial class UcDashboard : UserControl
     private List<SyntheseAnalytiqueRow> _analytique = new();
     private List<MonthlyEvolutionPoint> _evolution = new();
 
-    public UcDashboard()
+    public FrmDashboard()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
@@ -85,7 +85,7 @@ public partial class UcDashboard : UserControl
             btnQuickRec.Click += (_, _) =>
             {
                 using var dlg = new FrmTransactionDialog("RECETTE");
-                if (dlg.ShowDialog(FindForm()) == DialogResult.OK) RefreshData();
+                if (dlg.ShowDialog(TopLevelControl as IWin32Window ?? this) == DialogResult.OK) RefreshData();
             };
             tip.SetToolTip(btnQuickRec, "Enregistrer rapidement une recette (Ctrl+N)");
 
@@ -95,7 +95,7 @@ public partial class UcDashboard : UserControl
             btnQuickDep.Click += (_, _) =>
             {
                 using var dlg = new FrmTransactionDialog("DEPENSE");
-                if (dlg.ShowDialog(FindForm()) == DialogResult.OK) RefreshData();
+                if (dlg.ShowDialog(TopLevelControl as IWin32Window ?? this) == DialogResult.OK) RefreshData();
             };
             tip.SetToolTip(btnQuickDep, "Enregistrer rapidement une dépense");
 
@@ -104,13 +104,13 @@ public partial class UcDashboard : UserControl
             btnQuickTrf.Click += (_, _) =>
             {
                 using var dlg = new FrmTransfertDialog();
-                if (dlg.ShowDialog(FindForm()) == DialogResult.OK) RefreshData();
+                if (dlg.ShowDialog(TopLevelControl as IWin32Window ?? this) == DialogResult.OK) RefreshData();
             };
             tip.SetToolTip(btnQuickTrf, "Transférer des fonds entre deux comptes (Ctrl+T)");
 
             var btnQuickPdf = Theme.CreateSecondaryButton("Rapports PDF", 114, 32);
             btnQuickPdf.Margin = new Padding(0, 2, 0, 0);
-            btnQuickPdf.Click += (_, _) => (FindForm() as FrmMain)?.Navigate("rapports");
+            btnQuickPdf.Click += (_, _) => (TopLevelControl as FrmMain)?.Navigate("rapports");
             tip.SetToolTip(btnQuickPdf, "Générer et imprimer les rapports officiels PDF (Ctrl+4)");
 
             filterBar.Controls.AddRange(new Control[] { btnQuickRec, btnQuickDep, btnQuickTrf, btnQuickPdf });
@@ -119,7 +119,7 @@ public partial class UcDashboard : UserControl
         {
             var btnQuickPdf = Theme.CreatePrimaryButton("Rapports PDF", 122, 32);
             btnQuickPdf.Margin = new Padding(0, 2, 0, 0);
-            btnQuickPdf.Click += (_, _) => (FindForm() as FrmMain)?.Navigate("rapports");
+            btnQuickPdf.Click += (_, _) => (TopLevelControl as FrmMain)?.Navigate("rapports");
             tip.SetToolTip(btnQuickPdf, "Consulter et exporter les rapports financiers PDF (Ctrl+4)");
             filterBar.Controls.Add(btnQuickPdf);
         }
@@ -145,7 +145,7 @@ public partial class UcDashboard : UserControl
                 : "Résultat net global";
         Color k4Color = UserSession.IsAdmin ? Theme.GoldAccent : (UserSession.IsTresorier ? Theme.SidebarNavyLight : Theme.SuccessGreen);
 
-        void GoTo(string key) => (FindForm() as FrmMain)?.Navigate(key);
+        void GoTo(string key) => (TopLevelControl as FrmMain)?.Navigate(key);
 
         string k4Target = UserSession.IsAdmin ? "validations" : (UserSession.IsTresorier ? "comptes" : "rapports");
 

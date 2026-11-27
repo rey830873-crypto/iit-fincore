@@ -6,7 +6,7 @@ using IIT.FinCore.WinForms.UI.Dialogs;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcUtilisateurs : UserControl
+public partial class FrmUtilisateurs : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridUsers = Theme.CreateStyledGrid();
@@ -25,7 +25,7 @@ public partial class UcUtilisateurs : UserControl
     private List<PermissionItem> _perms = new();
     private bool _loadingMatrix;
 
-    public UcUtilisateurs()
+    public FrmUtilisateurs()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

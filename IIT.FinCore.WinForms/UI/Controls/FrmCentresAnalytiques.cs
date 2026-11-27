@@ -5,7 +5,7 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcCentresAnalytiques : UserControl
+public partial class FrmCentresAnalytiques : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _gridCentres = Theme.CreateStyledGrid();
@@ -16,7 +16,7 @@ public partial class UcCentresAnalytiques : UserControl
     private List<CentreAnalytique> _centresList = new();
     private int? _editingId;
 
-    public UcCentresAnalytiques()
+    public FrmCentresAnalytiques()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

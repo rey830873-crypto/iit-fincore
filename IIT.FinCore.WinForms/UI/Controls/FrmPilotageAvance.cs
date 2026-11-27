@@ -9,7 +9,7 @@ namespace IIT.FinCore.WinForms.UI.Controls;
 /// <summary>
 /// Module avancé : Prévision Cash-Flow (6 mois), Opérations récurrentes et Clôture d'exercice comptable.
 /// </summary>
-public partial class UcPilotageAvance : UserControl
+public partial class FrmPilotageAvance : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly SmoothPanel _forecastChart = new();
@@ -29,7 +29,7 @@ public partial class UcPilotageAvance : UserControl
     private List<ExerciceComptable> _exercices = new();
     private List<OperationRecurrente> _recurrents = new();
 
-    public UcPilotageAvance()
+    public FrmPilotageAvance()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)

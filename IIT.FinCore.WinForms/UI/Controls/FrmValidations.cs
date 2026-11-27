@@ -5,14 +5,14 @@ using IIT.FinCore.WinForms.Services;
 
 namespace IIT.FinCore.WinForms.UI.Controls;
 
-public partial class UcValidations : UserControl
+public partial class FrmValidations : Form
 {
     private readonly TreasuryRepository _repo = new();
     private readonly DataGridView _grid = Theme.CreateStyledGrid();
     private readonly TextBox _txtCommentaire = new();
     private List<DemandeValidationItem> _demandes = new();
 
-    public UcValidations()
+    public FrmValidations()
     {
         InitializeComponent();
         if (System.ComponentModel.LicenseManager.UsageMode == System.ComponentModel.LicenseUsageMode.Designtime)
