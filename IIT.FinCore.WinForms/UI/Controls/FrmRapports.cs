@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using System.Text;
 using IIT.FinCore.WinForms.Data;
@@ -133,11 +134,13 @@ public partial class FrmRapports : Form
             var orgName = _repo.GetParametres().FirstOrDefault(p => p.CleParam == "NOM_ORGANISATION")?.ValeurParam ?? "IIT FINCORE";
 
             PdfReportService.GenerateFinancialReport(sfd.FileName, orgName, kpi, synthese, trxs, UserSession.CurrentUser?.NomComplet ?? "Utilisateur");
-            MessageBox.Show("Rapport financier officiel PDF généré et ouvert avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.ShowSuccess(
+                $"Rapport financier officiel PDF généré et ouvert avec succès !\n\nFichier : {Path.GetFileName(sfd.FileName)}",
+                "IIT FINCORE - Rapport PDF");
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Erreur lors de la génération PDF : " + ex.Message, "Erreur PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.ShowError("Erreur lors de la génération PDF : " + ex.Message, "Erreur PDF");
         }
     }
 
@@ -154,7 +157,9 @@ public partial class FrmRapports : Form
             sb.AppendLine($"{r.DateOperation:yyyy-MM-dd};{r.Reference};{r.TypeTransaction};\"{r.Libelle}\";\"{r.CompteNom}\";\"{r.StructureNom}\";{r.Montant};\"{r.CentresResume}\";{r.Statut}");
 
         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-        MessageBox.Show("Export CSV généré avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.ShowSuccess(
+            $"Export CSV des transactions généré avec succès !\n\nFichier : {Path.GetFileName(sfd.FileName)}",
+            "IIT FINCORE - Export CSV");
     }
 
     private void ExportAnalytiqueCsv()
@@ -169,6 +174,8 @@ public partial class FrmRapports : Form
             sb.AppendLine($"\"{r.StructureNom}\";{r.CentreCode};\"{r.CentreLibelle}\";{r.TotalRecettes};{r.TotalDepenses};{r.ResultatNet}");
 
         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-        MessageBox.Show("Synthèse analytique exportée avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.ShowSuccess(
+            $"Synthèse analytique exportée avec succès !\n\nFichier : {Path.GetFileName(sfd.FileName)}",
+            "IIT FINCORE - Export Analytique");
     }
 }

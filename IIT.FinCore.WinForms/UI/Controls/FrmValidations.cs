@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.Models;
@@ -114,7 +115,7 @@ public partial class FrmValidations : Form
         var d = _demandes[idx];
         if (d.Statut != "EN_ATTENTE")
         {
-            MessageBox.Show("Cette demande a déjà été traitée.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Cette demande a déjà été traitée.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
@@ -127,12 +128,12 @@ public partial class FrmValidations : Form
             _repo.DecideValidation(d.Id, d.TransactionId, approve, UserSession.CurrentUser!.Id, comm);
             _txtCommentaire.Clear();
             LoadData();
-            MessageBox.Show(approve ? "Demande approuvée et solde du compte mis à jour." : "Demande rejetée.",
+            FrmMessageBox.Show(approve ? "Demande approuvée et solde du compte mis à jour." : "Demande rejetée.",
                 "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

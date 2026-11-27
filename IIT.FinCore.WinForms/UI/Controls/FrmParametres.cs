@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.Services;
@@ -138,12 +139,12 @@ public partial class FrmParametres : Form
         {
             if (!decimal.TryParse(txtThreshold.Text.Replace(" ", ""), out var seuil) || seuil < 0)
             {
-                MessageBox.Show("Veuillez saisir un seuil numérique valide (ex. 200000).", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                FrmMessageBox.Show("Veuillez saisir un seuil numérique valide (ex. 200000).", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             notifService.SavePreferences(new NotificationPreferences(chkToast.Checked, chkSound.Checked, seuil));
             notifService.SyncAutomaticAlerts();
-            MessageBox.Show("Préférences de notifications enregistrées et appliquées !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Préférences de notifications enregistrées et appliquées !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         };
 
         var btnTestToast = Theme.CreateSecondaryButton("Tester une alerte", 155, 38);
@@ -222,22 +223,22 @@ public partial class FrmParametres : Form
         var (okPwd, pwdMsg) = SecurityService.ValidatePasswordStrength(_txtNewPwd.Text);
         if (!okPwd)
         {
-            MessageBox.Show(pwdMsg, "Politique de mot de passe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show(pwdMsg, "Politique de mot de passe", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (_txtNewPwd.Text != _txtConfirmPwd.Text)
         {
-            MessageBox.Show("La confirmation ne correspond pas au nouveau mot de passe.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("La confirmation ne correspond pas au nouveau mot de passe.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (_auth.ChangePassword(UserSession.CurrentUser!.Id, _txtOldPwd.Text, _txtNewPwd.Text))
         {
             _txtOldPwd.Clear(); _txtNewPwd.Clear(); _txtConfirmPwd.Clear();
-            MessageBox.Show("Mot de passe modifié avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Mot de passe modifié avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
         {
-            MessageBox.Show("Le mot de passe actuel est incorrect.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Le mot de passe actuel est incorrect.", "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -256,7 +257,7 @@ public partial class FrmParametres : Form
         if (string.IsNullOrWhiteSpace(_txtCle.Text)) return;
         _repo.SaveParametre(_txtCle.Text.Trim(), _txtValeur.Text.Trim(), UserSession.CurrentUser!.Id);
         LoadParams();
-        MessageBox.Show("Paramètre mis à jour.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show("Paramètre mis à jour.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void BackupMySqlDatabase()
@@ -273,7 +274,7 @@ public partial class FrmParametres : Form
             var dumpExe = FindMySqlDump();
             if (dumpExe == null)
             {
-                MessageBox.Show("mysqldump.exe introuvable (vérifiez WampServer/MySQL).", "Sauvegarde MySQL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                FrmMessageBox.Show("mysqldump.exe introuvable (vérifiez WampServer/MySQL).", "Sauvegarde MySQL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -298,11 +299,11 @@ public partial class FrmParametres : Form
 
             File.WriteAllText(sfd.FileName, sqlDump, System.Text.Encoding.UTF8);
             _auth.LogActivity(UserSession.CurrentUser!.Id, "Sauvegarde MySQL", "Paramètres", "iit_fincore", null, Path.GetFileName(sfd.FileName));
-            MessageBox.Show($"Sauvegarde MySQL complète enregistrée :\n{sfd.FileName}", "IIT FINCORE - Sauvegarde réussie", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show($"Sauvegarde MySQL complète enregistrée :\n{sfd.FileName}", "IIT FINCORE - Sauvegarde réussie", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Erreur lors de la sauvegarde : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Erreur lors de la sauvegarde : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -335,12 +336,12 @@ public partial class FrmParametres : Form
             Theme.ResetLogoCache();
             File.Copy(ofd.FileName, destPath, overwrite: true);
             _auth.LogActivity(UserSession.CurrentUser!.Id, "Changement de logo client", "Paramètres", null, null, Path.GetFileName(ofd.FileName));
-            MessageBox.Show("Logo client mis à jour ! Il apparaîtra sur tous les écrans et les rapports PDF (redémarrez ou changez de page pour actualiser).",
+            FrmMessageBox.Show("Logo client mis à jour ! Il apparaîtra sur tous les écrans et les rapports PDF (redémarrez ou changez de page pour actualiser).",
                 "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Impossible de changer le logo : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Impossible de changer le logo : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

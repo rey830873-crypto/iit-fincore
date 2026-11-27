@@ -372,7 +372,7 @@ public partial class FrmNotificationCenter : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Impossible d'ouvrir WhatsApp : " + ex.Message, "Partage WhatsApp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Impossible d'ouvrir WhatsApp : " + ex.Message, "Partage WhatsApp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 }

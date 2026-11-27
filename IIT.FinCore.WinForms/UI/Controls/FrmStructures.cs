@@ -153,13 +153,13 @@ public partial class FrmStructures : Form
         if (idx < 0 || idx >= _filtered.Count) return;
 
         var s = _filtered[idx];
-        if (MessageBox.Show($"Supprimer ou archiver la structure « {s.Nom} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer ou archiver la structure « {s.Nom} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         var msg = _repo.DeleteOrArchiveStructure(s.Id, UserSession.CurrentUser!.Id);
         ResetForm();
         LoadData();
-        MessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ShowSelectedDetails()
@@ -190,7 +190,7 @@ public partial class FrmStructures : Form
     {
         if (string.IsNullOrWhiteSpace(_txtCode.Text) || string.IsNullOrWhiteSpace(_txtNom.Text))
         {
-            MessageBox.Show("Le code et le nom sont obligatoires.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Le code et le nom sont obligatoires.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         try
@@ -217,7 +217,7 @@ public partial class FrmStructures : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

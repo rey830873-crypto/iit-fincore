@@ -78,24 +78,24 @@ public partial class FrmForgotPassword : Form
     {
         if (string.IsNullOrWhiteSpace(_txtEmail.Text) || string.IsNullOrWhiteSpace(_txtPhone.Text))
         {
-            MessageBox.Show("Veuillez saisir votre e-mail et votre numéro de téléphone enregistré.", "Vérification requise", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Veuillez saisir votre e-mail et votre numéro de téléphone enregistré.", "Vérification requise", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (_txtNewPwd.Text != _txtConfirm.Text)
         {
-            MessageBox.Show("Les mots de passe ne correspondent pas.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Les mots de passe ne correspondent pas.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         try
         {
             var (ok, msg) = _auth.ResetPasswordVerified(_txtEmail.Text, _txtPhone.Text, _txtNewPwd.Text);
-            MessageBox.Show(msg, ok ? "IIT FINCORE" : "Sécurité", MessageBoxButtons.OK, ok ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            FrmMessageBox.Show(msg, ok ? "IIT FINCORE" : "Sécurité", MessageBoxButtons.OK, ok ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             if (ok) Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

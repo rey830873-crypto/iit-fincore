@@ -763,34 +763,133 @@ public static class Theme
         return panel;
     }
 
+    /// <summary>
+    /// Projette et dessine des anneaux orbitaux 3D en perspective (X, Y, Z) avec sphères lumineuses or
+    /// autour du logo IIT FINCORE. Appeler avec frontHalf=false avant le logo et frontHalf=true après.
+    /// </summary>
+    public static void Draw3DOrbitalRings(Graphics g, PointF center, float radius, float angleRad, bool frontHalf)
+    {
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        const float fov = 340f;
+
+        // 2 anneaux 3D inclinés sur des plans orthogonaux pour un vrai volume spatial
+        (float tiltX, float tiltZ, float speedMul, Color ringCol)[] rings =
+        {
+            (0.95f,  0.34f,  1.0f, GoldLight),
+            (1.12f, -0.46f, -0.7f, Color.FromArgb(145, 200, 255))
+        };
+
+        foreach (var (tiltX, tiltZ, speedMul, ringCol) in rings)
+        {
+            float cosTx = MathF.Cos(tiltX), sinTx = MathF.Sin(tiltX);
+            float cosTz = MathF.Cos(tiltZ), sinTz = MathF.Sin(tiltZ);
+            const int segs = 48;
+
+            PointF? prev = null;
+            for (int i = 0; i <= segs; i++)
+            {
+                float t = (i / (float)segs) * MathF.PI * 2f + angleRad * speedMul;
+                float x0 = MathF.Cos(t) * radius;
+                float y0 = MathF.Sin(t) * radius;
+
+                // Rotation 3D autour de X puis Z
+                float y1 = y0 * cosTx;
+                float z1 = y0 * sinTx;
+                float x2 = x0 * cosTz - y1 * sinTz;
+                float y2 = x0 * sinTz + y1 * cosTz;
+
+                bool isFront = z1 >= 0f;
+                float persp = fov / (fov - z1);
+                var pt = new PointF(center.X + x2 * persp, center.Y + y2 * persp);
+
+                if (prev.HasValue && isFront == frontHalf)
+                {
+                    int alpha = isFront ? 155 : 55;
+                    float width = isFront ? 2.1f : 1.1f;
+                    using var pen = new Pen(Color.FromArgb(alpha, ringCol), width);
+                    g.DrawLine(pen, prev.Value, pt);
+                }
+                prev = pt;
+            }
+
+            // 2 particules orbitales 3D lumineuses sur chaque anneau
+            for (int p = 0; p < 2; p++)
+            {
+                float t = angleRad * speedMul * 1.6f + p * MathF.PI;
+                float x0 = MathF.Cos(t) * radius;
+                float y0 = MathF.Sin(t) * radius;
+                float y1 = y0 * cosTx;
+                float z1 = y0 * sinTx;
+                float x2 = x0 * cosTz - y1 * sinTz;
+                float y2 = x0 * sinTz + y1 * cosTz;
+
+                if ((z1 >= 0f) != frontHalf) continue;
+
+                float persp = fov / (fov - z1);
+                float px = center.X + x2 * persp;
+                float py = center.Y + y2 * persp;
+                float rNode = (frontHalf ? 4.4f : 2.6f) * persp;
+
+                using var glow = new SolidBrush(Color.FromArgb(frontHalf ? 75 : 30, ringCol));
+                g.FillEllipse(glow, px - rNode * 2.1f, py - rNode * 2.1f, rNode * 4.2f, rNode * 4.2f);
+                using var core = new SolidBrush(frontHalf ? Color.White : Color.FromArgb(140, ringCol));
+                g.FillEllipse(core, px - rNode * 0.65f, py - rNode * 0.65f, rNode * 1.3f, rNode * 1.3f);
+            }
+        }
+    }
+
     public static Panel CreateKpiCard(string title, string value, Color accentColor, Action? onClick = null)
     {
         var card = CreateCardPanel(new Padding(18, 14, 14, 14));
         card.Height = 108;
         bool hovered = false;
+        var hoverPt = new Point(120, 50);
 
         if (onClick != null)
             card.Cursor = Cursors.Hand;
 
-        // Pastille latérale arrondie élégante + surbrillance dorée interactive au survol
+        // Effet 3D au survol : reflet lumineux doré qui suit la souris + biseau inférieur 3D + soulèvement
         card.Paint += (_, e) =>
         {
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            if (hovered && onClick != null)
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            if (card.Width <= 4 || card.Height <= 4) return;
+
+            var cardRect = new Rectangle(0, 0, card.Width - 1, card.Height - 1);
+            using var cardPath = CreateRoundedPath(cardRect, 12);
+
+            if (hovered)
             {
-                using var hoverPath = CreateRoundedPath(new Rectangle(0, 0, card.Width - 1, card.Height - 1), 12);
+                // Reflet lumineux 3D (specular spotlight) suivant le curseur
+                var lightRect = new Rectangle(hoverPt.X - 110, hoverPt.Y - 75, 220, 150);
+                using var lp = new GraphicsPath();
+                lp.AddEllipse(lightRect);
+                using var pgb = new PathGradientBrush(lp)
+                {
+                    CenterColor = Color.FromArgb(34, GoldLight),
+                    SurroundColors = new[] { Color.FromArgb(0, GoldLight) }
+                };
+                var st = g.Save();
+                g.SetClip(cardPath);
+                g.FillEllipse(pgb, lightRect);
+                // Biseau 3D inférieur (effet carte surélevée)
+                using var bevelPen = new Pen(Color.FromArgb(55, SidebarNavy), 3f);
+                g.DrawLine(bevelPen, 10, card.Height - 2, card.Width - 10, card.Height - 2);
+                g.Restore(st);
+
                 using var hoverPen = new Pen(GoldAccent, 1.8f);
-                e.Graphics.DrawPath(hoverPen, hoverPath);
+                g.DrawPath(hoverPen, cardPath);
             }
 
-            using var barPath = CreateRoundedPath(new Rectangle(12, 18, 5, card.Height - 36), 3);
+            int lift = hovered ? -2 : 0;
+            using var barPath = CreateRoundedPath(new Rectangle(12, 18 + lift, 5, card.Height - 36), 3);
             using var barBrush = new SolidBrush(accentColor);
-            e.Graphics.FillPath(barBrush, barPath);
+            g.FillPath(barBrush, barPath);
 
-            using var halo = new SolidBrush(Color.FromArgb(hovered ? 38 : 20, accentColor));
-            e.Graphics.FillEllipse(halo, card.Width - 54, 16, 36, 36);
+            using var halo = new SolidBrush(Color.FromArgb(hovered ? 44 : 20, accentColor));
+            g.FillEllipse(halo, card.Width - 54, 16 + lift, 36, 36);
             using var dot = new SolidBrush(accentColor);
-            e.Graphics.FillEllipse(dot, card.Width - 41, 29, 10, 10);
+            g.FillEllipse(dot, card.Width - 41, 29 + lift, 10, 10);
         };
 
         var lblTitle = new Label
@@ -798,6 +897,7 @@ public static class Theme
             Text = title.ToUpperInvariant(),
             Font = new Font("Segoe UI", 8F, FontStyle.Bold),
             ForeColor = TextMuted,
+            BackColor = Color.Transparent,
             AutoSize = true,
             Location = new Point(28, 18)
         };
@@ -808,23 +908,36 @@ public static class Theme
             Text = value,
             Font = FontKpiValue,
             ForeColor = TextPrimary,
+            BackColor = Color.Transparent,
             AutoSize = true,
             Location = new Point(26, 46)
         };
 
-        if (onClick != null)
+        void AttachEvents(Control c)
         {
-            void AttachEvents(Control c)
+            if (onClick != null) c.Cursor = Cursors.Hand;
+            c.MouseEnter += (_, _) => { hovered = true; lblTitle.Top = 16; lblValue.Top = 44; card.Invalidate(); };
+            c.MouseLeave += (_, _) =>
             {
-                c.Cursor = Cursors.Hand;
-                c.MouseEnter += (_, _) => { hovered = true; card.Invalidate(); };
-                c.MouseLeave += (_, _) => { hovered = false; card.Invalidate(); };
+                if (!card.ClientRectangle.Contains(card.PointToClient(Cursor.Position)))
+                {
+                    hovered = false;
+                    lblTitle.Top = 18;
+                    lblValue.Top = 46;
+                    card.Invalidate();
+                }
+            };
+            c.MouseMove += (_, me) =>
+            {
+                hoverPt = c == card ? me.Location : card.PointToClient(c.PointToScreen(me.Location));
+                if (hovered) card.Invalidate();
+            };
+            if (onClick != null)
                 c.Click += (_, _) => onClick();
-            }
-            AttachEvents(card);
-            AttachEvents(lblTitle);
-            AttachEvents(lblValue);
         }
+        AttachEvents(card);
+        AttachEvents(lblTitle);
+        AttachEvents(lblValue);
 
         card.Controls.Add(lblValue);
         card.Controls.Add(lblTitle);

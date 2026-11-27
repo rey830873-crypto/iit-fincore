@@ -56,7 +56,7 @@ public partial class FrmDetailsDialog : Form
                 if (File.Exists(attachmentPath))
                     Process.Start(new ProcessStartInfo(attachmentPath) { UseShellExecute = true });
                 else
-                    MessageBox.Show($"Fichier introuvable :\n{attachmentPath}", "Justificatif", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    FrmMessageBox.Show($"Fichier introuvable :\n{attachmentPath}", "Justificatif", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             };
             card.Controls.Add(btnOpen);
             y += 44;

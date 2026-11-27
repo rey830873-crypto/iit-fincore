@@ -324,7 +324,7 @@ public partial class FrmMain : Form, IMessageFilter
                 _idleTimer.Stop();
                 Application.RemoveMessageFilter(this);
                 new Data.AuthRepository().LogActivity(UserSession.CurrentUser?.Id, "Verrouillage inactivité", "Sécurité", null, null, "Session expirée après 15 min d'inactivité");
-                MessageBox.Show("Votre session a expiré après 15 minutes d'inactivité par mesure de sécurité.", "IIT FINCORE - Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                FrmMessageBox.Show("Votre session a expiré après 15 minutes d'inactivité par mesure de sécurité.", "IIT FINCORE - Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 UserSession.Clear();
                 RequestedLogout = true;
                 Close();
@@ -689,7 +689,7 @@ public partial class FrmMain : Form, IMessageFilter
         tip.SetToolTip(btnHelp, "Aide rapide et raccourcis clavier");
         btnHelp.Click += (_, _) =>
         {
-            MessageBox.Show(
+            FrmMessageBox.Show(
                 "Prise en main rapide - IIT FINCORE\n\n" +
                 "• Cliquez sur n'importe quelle carte KPI ou graphique du tableau de bord pour ouvrir le module correspondant.\n" +
                 "• Double-cliquez sur une ligne de tableau pour consulter ou agir directement.\n" +

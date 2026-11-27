@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using IIT.FinCore.WinForms.Data;
@@ -233,7 +234,7 @@ public partial class FrmPilotageAvance : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -244,7 +245,7 @@ public partial class FrmPilotageAvance : Form
         if (idx < 0 || idx >= _recurrents.Count) return;
 
         var r = _recurrents[idx];
-        if (MessageBox.Show($"Supprimer l'opération récurrente « {r.Libelle} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer l'opération récurrente « {r.Libelle} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         _repo.DeleteOperationRecurrente(r.Id, UserSession.CurrentUser!.Id);
@@ -260,11 +261,11 @@ public partial class FrmPilotageAvance : Form
         var ex = _exercices[idx];
         if (ex.Statut == "CLOTURE")
         {
-            MessageBox.Show("Cet exercice est déjà clôturé.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Cet exercice est déjà clôturé.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
-        var confirm = MessageBox.Show(
+        var confirm = FrmMessageBox.Show(
             $"Confirmez-vous la clôture définitive de « {ex.Libelle} » ?\n\nAucune nouvelle opération ne pourra être saisie sur {ex.Annee}, et l'exercice {ex.Annee + 1} sera automatiquement ouvert.",
             "Clôture d'exercice IIT FINCORE",
             MessageBoxButtons.YesNo,
@@ -275,11 +276,11 @@ public partial class FrmPilotageAvance : Form
         {
             _repo.CloturerExercice(ex.Id, UserSession.CurrentUser!.Id);
             LoadAll();
-            MessageBox.Show($"Exercice {ex.Annee} clôturé avec succès ! Exercice {ex.Annee + 1} ouvert.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show($"Exercice {ex.Annee} clôturé avec succès ! Exercice {ex.Annee + 1} ouvert.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception err)
         {
-            MessageBox.Show(err.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(err.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

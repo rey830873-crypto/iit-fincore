@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.Models;
@@ -145,7 +146,7 @@ public partial class FrmCentresAnalytiques : Form
     {
         if (string.IsNullOrWhiteSpace(_txtCode.Text) || string.IsNullOrWhiteSpace(_txtLibelle.Text))
         {
-            MessageBox.Show("Le code et le libellé sont requis.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Le code et le libellé sont requis.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         try
@@ -169,7 +170,7 @@ public partial class FrmCentresAnalytiques : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -180,12 +181,12 @@ public partial class FrmCentresAnalytiques : Form
         if (idx < 0 || idx >= _centresList.Count) return;
 
         var c = _centresList[idx];
-        if (MessageBox.Show($"Supprimer ou désactiver le centre « {c.Libelle} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer ou désactiver le centre « {c.Libelle} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         var msg = _repo.DeleteOrArchiveCentre(c.Id, UserSession.CurrentUser!.Id);
         ResetCentreForm();
         LoadData();
-        MessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }

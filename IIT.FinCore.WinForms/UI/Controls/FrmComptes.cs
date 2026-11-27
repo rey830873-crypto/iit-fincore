@@ -169,13 +169,13 @@ public partial class FrmComptes : Form
         if (idx < 0 || idx >= _filtered.Count) return;
 
         var c = _filtered[idx];
-        if (MessageBox.Show($"Supprimer ou archiver le compte « {c.NomCompte} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer ou archiver le compte « {c.NomCompte} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         var msg = _repo.DeleteOrArchiveCompte(c.Id, UserSession.CurrentUser!.Id);
         ResetForm();
         LoadData();
-        MessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void ShowSelectedDetails()
@@ -203,7 +203,7 @@ public partial class FrmComptes : Form
     {
         if (string.IsNullOrWhiteSpace(_txtNom.Text) || _cboStructure.SelectedValue is not int sid)
         {
-            MessageBox.Show("Veuillez renseigner le nom du compte et la structure.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Veuillez renseigner le nom du compte et la structure.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         try
@@ -231,7 +231,7 @@ public partial class FrmComptes : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

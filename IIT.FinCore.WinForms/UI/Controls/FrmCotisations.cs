@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.Models;
@@ -263,7 +264,7 @@ public partial class FrmCotisations : Form
         if (idx < 0 || idx >= _campagnesList.Count) return;
 
         var c = _campagnesList[idx];
-        if (MessageBox.Show($"Supprimer la campagne « {c.Nom} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer la campagne « {c.Nom} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         _repo.DeleteCotisation(c.Id, UserSession.CurrentUser!.Id);
@@ -288,18 +289,18 @@ public partial class FrmCotisations : Form
     {
         if (_cboPayCotis.SelectedValue is not int cotId || _cboPayMembre.SelectedItem is not MembreItem mem || _cboPayCompte.SelectedItem is not CompteTresorerie cpt)
         {
-            MessageBox.Show("Veuillez sélectionner une campagne, un membre et un compte.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Veuillez sélectionner une campagne, un membre et un compte.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         try
         {
             _repo.EnregistrerPaiementCotisation(cotId, mem.Id, cpt.Id, _numPayMontant.Value, UserSession.CurrentUser!.Id);
             LoadAll();
-            MessageBox.Show("Règlement enregistré avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Règlement enregistré avec succès !", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -307,7 +308,7 @@ public partial class FrmCotisations : Form
     {
         if (_cboMembreStruct.SelectedValue is not int sid)
         {
-            MessageBox.Show("Sélectionnez d'abord la structure cible.", "Import CSV", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Sélectionnez d'abord la structure cible.", "Import CSV", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         using var ofd = new OpenFileDialog
@@ -321,11 +322,11 @@ public partial class FrmCotisations : Form
         {
             int count = _repo.ImportMembresFromCsv(ofd.FileName, sid, UserSession.CurrentUser!.Id);
             LoadAll();
-            MessageBox.Show($"{count} membre(s) importé(s) avec succès dans la base MySQL !", "Import CSV réussi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show($"{count} membre(s) importé(s) avec succès dans la base MySQL !", "Import CSV réussi", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Erreur d'import CSV : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Erreur d'import CSV : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -350,7 +351,7 @@ public partial class FrmCotisations : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Erreur PDF : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Erreur PDF : " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -364,6 +365,6 @@ public partial class FrmCotisations : Form
         var reste = Math.Max(0, p.MontantDu - p.MontantPaye);
         var msg = $"Bonjour {p.MembreNom},\n\nRappel de la trésorerie ({p.StructureNom}) : un solde de {reste:N0} FCFA reste à régler pour la cotisation « {p.CotisationNom} » (échéance : {p.DateEcheance:dd/MM/yyyy}).\n\nMerci pour votre régularisation !\n- IIT FINCORE";
         Clipboard.SetText(msg);
-        MessageBox.Show("Message de relance copié dans le presse-papiers ! Collez-le directement dans WhatsApp ou par e-mail.", "Relance prête", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show("Message de relance copié dans le presse-papiers ! Collez-le directement dans WhatsApp ou par e-mail.", "Relance prête", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }

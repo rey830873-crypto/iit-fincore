@@ -216,7 +216,7 @@ public partial class FrmUtilisateurs : Form
         var u = _users[idx];
         if (u.Id == UserSession.CurrentUser!.Id)
         {
-            MessageBox.Show("Vous ne pouvez pas désactiver votre propre compte.", "Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Vous ne pouvez pas désactiver votre propre compte.", "Sécurité", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         _repo.ToggleUtilisateurActif(u.Id, !u.EstActif, UserSession.CurrentUser.Id);
@@ -227,13 +227,13 @@ public partial class FrmUtilisateurs : Form
     {
         if (string.IsNullOrWhiteSpace(_txtNom.Text) || string.IsNullOrWhiteSpace(_txtEmail.Text) || string.IsNullOrWhiteSpace(_txtPwd.Text))
         {
-            MessageBox.Show("Nom, e-mail et mot de passe sont obligatoires.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Nom, e-mail et mot de passe sont obligatoires.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         var (okPwd, pwdMsg) = SecurityService.ValidatePasswordStrength(_txtPwd.Text);
         if (!okPwd)
         {
-            MessageBox.Show(pwdMsg, "Politique de sécurité", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show(pwdMsg, "Politique de sécurité", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         try
@@ -247,7 +247,7 @@ public partial class FrmUtilisateurs : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

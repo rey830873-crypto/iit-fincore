@@ -187,7 +187,7 @@ public partial class FrmTransactions : Form
     {
         if (_grid.CurrentRow == null)
         {
-            MessageBox.Show("Veuillez sélectionner une transaction dans la liste.", "Reçu PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Veuillez sélectionner une transaction dans la liste.", "Reçu PDF", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         int idx = _grid.CurrentRow.Index;
@@ -209,7 +209,7 @@ public partial class FrmTransactions : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Erreur lors de la génération du reçu PDF : " + ex.Message, "Erreur PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show("Erreur lors de la génération du reçu PDF : " + ex.Message, "Erreur PDF", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -229,7 +229,7 @@ public partial class FrmTransactions : Form
         var t = _filtered[idx];
         if (t.Statut != "VALIDEE")
         {
-            MessageBox.Show("Seule une transaction VALIDÉE peut être rapprochée sur le relevé bancaire.", "Rapprochement", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Seule une transaction VALIDÉE peut être rapprochée sur le relevé bancaire.", "Rapprochement", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         _repo.ToggleRapprochement(t.Id, !t.EstRapprochee, UserSession.CurrentUser!.Id);
@@ -244,12 +244,12 @@ public partial class FrmTransactions : Form
 
         var t = _filtered[idx];
         var actionLabel = t.Statut == "VALIDEE" ? "annuler (et rétablir le solde du compte)" : "supprimer définitivement";
-        if (MessageBox.Show($"Voulez-vous {actionLabel} l'opération « {t.Libelle} » ({t.Montant:N0} FCFA) ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Voulez-vous {actionLabel} l'opération « {t.Libelle} » ({t.Montant:N0} FCFA) ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         var msg = _repo.CancelOrDeleteTransaction(t.Id, UserSession.CurrentUser!.Id);
         LoadData();
-        MessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        FrmMessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void LoadData()

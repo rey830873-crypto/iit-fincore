@@ -30,6 +30,16 @@ public partial class FrmDashboard : Form
     private List<SyntheseAnalytiqueRow> _analytique = new();
     private List<MonthlyEvolutionPoint> _evolution = new();
 
+    // Animation 3D Donut + compteurs KPI
+    private readonly System.Windows.Forms.Timer _animTimer = new();
+    private float _animProgress = 1f;
+    private int _hoveredSlice = -1;
+    private readonly List<Rectangle> _legendHitRects = new();
+    private Rectangle _donutEllipseRect = Rectangle.Empty;
+    private readonly List<(float Start, float Sweep)> _sliceAngles = new();
+    private decimal _targetKpi1, _targetKpi2, _targetKpi3, _targetKpi4;
+    private bool _animateKpi4Currency;
+
     public FrmDashboard()
     {
         InitializeComponent();
@@ -37,6 +47,25 @@ public partial class FrmDashboard : Form
             return;
         Controls.Clear();
         BackColor = Theme.PageBg;
+
+        _animTimer.Interval = 16;
+        _animTimer.Tick += (_, _) =>
+        {
+            _animProgress = Math.Min(1f, _animProgress + 0.055f);
+            float ease = 1f - MathF.Pow(1f - _animProgress, 3f);
+            _lblKpi1.Text = $"{Math.Round(_targetKpi1 * (decimal)ease):N0} FCFA";
+            _lblKpi2.Text = $"{Math.Round(_targetKpi2 * (decimal)ease):N0} FCFA";
+            _lblKpi3.Text = $"{Math.Round(_targetKpi3 * (decimal)ease):N0} FCFA";
+            if (_animateKpi4Currency)
+            {
+                var v4 = Math.Round(_targetKpi4 * (decimal)ease);
+                _lblKpi4.Text = (v4 >= 0 ? "+" : "") + $"{v4:N0} FCFA";
+            }
+            _donutChartPanel.Invalidate();
+            if (_animProgress >= 1f) _animTimer.Stop();
+        };
+        Disposed += (_, _) => { _animTimer.Stop(); _animTimer.Dispose(); };
+
         BuildLayout();
         InitStructureFilter();
         RefreshData();
@@ -203,6 +232,8 @@ public partial class FrmDashboard : Form
         _donutChartPanel.BackColor = Color.White;
         _donutChartPanel.Cursor = Cursors.Hand;
         _donutChartPanel.Paint += DrawDonutChart;
+        _donutChartPanel.MouseMove += HandleDonutHover;
+        _donutChartPanel.MouseLeave += (_, _) => { if (_hoveredSlice != -1) { _hoveredSlice = -1; _donutChartPanel.Invalidate(); } };
         _donutChartPanel.Click += (_, _) => GoTo(UserSession.IsConsultant ? "rapports" : "centres");
         tip.SetToolTip(_donutChartPanel, "Cliquez pour voir le détail par centre analytique");
         cardDonut.Controls.Add(_donutChartPanel);
@@ -300,6 +331,10 @@ public partial class FrmDashboard : Form
             scope = st.Id;
 
         var kpi = _repo.GetDashboardKpis(scope);
+        _targetKpi1 = kpi.SoldeGlobal;
+        _targetKpi2 = kpi.TotalRecettes;
+        _targetKpi3 = kpi.TotalDepenses;
+        _animateKpi4Currency = false;
         _lblKpi1.Text = $"{kpi.SoldeGlobal:N0} FCFA";
         _lblKpi2.Text = $"{kpi.TotalRecettes:N0} FCFA";
         _lblKpi3.Text = $"{kpi.TotalDepenses:N0} FCFA";
@@ -350,6 +385,8 @@ public partial class FrmDashboard : Form
         else // Consultant
         {
             var net = kpi.TotalRecettes - kpi.TotalDepenses;
+            _targetKpi4 = net;
+            _animateKpi4Currency = true;
             _lblKpi4.Text = (net >= 0 ? "+" : "") + $"{net:N0} FCFA";
         }
 
@@ -372,7 +409,43 @@ public partial class FrmDashboard : Form
 
         _evolution = _repo.GetMonthlyEvolution(scope);
         _lineChartPanel.Invalidate();
+        _animProgress = 0.05f;
+        _animTimer.Start();
         _donutChartPanel.Invalidate();
+    }
+
+    private void HandleDonutHover(object? sender, MouseEventArgs e)
+    {
+        int found = -1;
+        for (int i = 0; i < _legendHitRects.Count; i++)
+        {
+            if (_legendHitRects[i].Contains(e.Location)) { found = i; break; }
+        }
+        if (found == -1 && !_donutEllipseRect.IsEmpty && _sliceAngles.Count > 0)
+        {
+            float cx = _donutEllipseRect.X + _donutEllipseRect.Width / 2f;
+            float cy = _donutEllipseRect.Y + _donutEllipseRect.Height / 2f;
+            float rx = _donutEllipseRect.Width / 2f;
+            float ry = _donutEllipseRect.Height / 2f;
+            float nx = (e.X - cx) / Math.Max(1f, rx);
+            float ny = (e.Y - cy) / Math.Max(1f, ry);
+            float dist = MathF.Sqrt(nx * nx + ny * ny);
+            if (dist >= 0.45f && dist <= 1.12f)
+            {
+                float ang = MathF.Atan2(ny, nx) * 180f / MathF.PI;
+                if (ang < -90f) ang += 360f;
+                for (int i = 0; i < _sliceAngles.Count; i++)
+                {
+                    if (ang >= _sliceAngles[i].Start && ang <= _sliceAngles[i].Start + _sliceAngles[i].Sweep)
+                    { found = i; break; }
+                }
+            }
+        }
+        if (found != _hoveredSlice)
+        {
+            _hoveredSlice = found;
+            _donutChartPanel.Invalidate();
+        }
     }
 
     private void DrawLineChart(object? sender, PaintEventArgs e)
@@ -487,41 +560,97 @@ public partial class FrmDashboard : Form
         int panelW = _donutChartPanel.Width;
         int panelH = _donutChartPanel.Height;
         if (panelW < 40 || panelH < 40) return;
-        int diameter = Math.Clamp(Math.Min(panelH - 16, panelW / 3), 92, 134);
-        int donutX = 12;
-        int donutY = Math.Max(6, (panelH - diameter) / 2);
+
+        // Donut 3D incliné en perspective avec extrusion latérale (profondeur 13px) + animation 0->360°
+        int donutW = Math.Clamp(Math.Min(panelH - 12, panelW / 3 + 12), 104, 152);
+        int donutH = (int)(donutW * 0.74f);
+        int depth3D = 13;
+        int donutX = 14;
+        int donutY = Math.Max(10, (panelH - donutH - depth3D) / 2);
 
         decimal total = items.Sum(i => i.Value);
-        var rect = new Rectangle(donutX, donutY, diameter, diameter);
-        float startAngle = -90f;
+        float ease = 1f - MathF.Pow(1f - _animProgress, 3f);
+        float maxSweep = 360f * ease;
 
+        _donutEllipseRect = new Rectangle(donutX, donutY, donutW, donutH);
+        _sliceAngles.Clear();
+
+        var sliceDefs = new List<(float Start, float Sweep, Color BaseCol, Color SideCol, Point Offset)>();
+        float curAngle = -90f;
+        float usedSweep = 0f;
         for (int i = 0; i < items.Count; i++)
         {
-            float sweep = (float)(items[i].Value / total) * 360f;
-            using var br = new SolidBrush(palette[i % palette.Length]);
-            g.FillPie(br, rect, startAngle, sweep);
-            startAngle += sweep;
+            float fullSweep = (float)(items[i].Value / total) * 360f;
+            float visibleSweep = Math.Clamp(maxSweep - usedSweep, 0f, fullSweep);
+            usedSweep += fullSweep;
+
+            var col = palette[i % palette.Length];
+            var sideCol = ControlPaint.Dark(col, 0.28f);
+
+            // Détachement 3D de la part survolée à la souris
+            Point off = Point.Empty;
+            if (i == _hoveredSlice)
+            {
+                float midRad = (curAngle + fullSweep / 2f) * MathF.PI / 180f;
+                off = new Point((int)(MathF.Cos(midRad) * 8f), (int)(MathF.Sin(midRad) * 6f) - 3);
+            }
+
+            _sliceAngles.Add((curAngle, fullSweep));
+            sliceDefs.Add((curAngle, visibleSweep, col, sideCol, off));
+            curAngle += fullSweep;
         }
 
-        // Trou central proportionnel avec total compact centré
-        int hole = (int)(diameter * 0.54f);
-        int holeX = donutX + (diameter - hole) / 2;
-        int holeY = donutY + (diameter - hole) / 2;
-        var holeRect = new Rectangle(holeX, holeY, hole, hole);
-        g.FillEllipse(Brushes.White, holeRect);
+        // Ombre douce au sol sous le cylindre 3D
+        using (var floorShadow = new SolidBrush(Color.FromArgb(24, 12, 31, 61)))
+            g.FillEllipse(floorShadow, donutX + 4, donutY + depth3D + 5, donutW, donutH);
 
-        string compactTotal = total >= 1_000_000m
-            ? $"{total / 1_000_000m:0.#} M"
-            : total >= 1_000m ? $"{total / 1_000m:0} k" : $"{total:0}";
-        TextRenderer.DrawText(g, compactTotal, Theme.UiFont(9.5F, FontStyle.Bold),
-            new Rectangle(holeX, holeY + hole / 2 - 16, hole, 18), Theme.TextPrimary,
+        // 1. Paroi d'extrusion 3D (couches empilées de bas en haut)
+        for (int z = depth3D; z >= 1; z--)
+        {
+            foreach (var s in sliceDefs)
+            {
+                if (s.Sweep <= 0.1f) continue;
+                var rSide = new Rectangle(donutX + s.Offset.X, donutY + s.Offset.Y + z, donutW, donutH);
+                using var brSide = new SolidBrush(s.SideCol);
+                g.FillPie(brSide, rSide, s.Start, s.Sweep);
+            }
+        }
+
+        // 2. Face supérieure 3D + liseré brillant
+        foreach (var s in sliceDefs)
+        {
+            if (s.Sweep <= 0.1f) continue;
+            var rTop = new Rectangle(donutX + s.Offset.X, donutY + s.Offset.Y, donutW, donutH);
+            using var brTop = new SolidBrush(s.BaseCol);
+            g.FillPie(brTop, rTop, s.Start, s.Sweep);
+            using var sepPen = new Pen(Color.FromArgb(140, 255, 255, 255), 1.2f);
+            g.DrawPie(sepPen, rTop, s.Start, s.Sweep);
+        }
+
+        // Trou central elliptique 3D avec rebord interne sombre
+        int holeW = (int)(donutW * 0.52f);
+        int holeH = (int)(donutH * 0.52f);
+        int holeX = donutX + (donutW - holeW) / 2;
+        int holeY = donutY + (donutH - holeH) / 2;
+        using (var innerEdge = new SolidBrush(Color.FromArgb(215, 224, 236)))
+            g.FillEllipse(innerEdge, holeX, holeY + 3, holeW, holeH);
+        g.FillEllipse(Brushes.White, holeX, holeY, holeW, holeH);
+
+        // Affiche soit le total global, soit le montant exact de la part survolée en 3D
+        decimal centerVal = (_hoveredSlice >= 0 && _hoveredSlice < items.Count) ? items[_hoveredSlice].Value : total;
+        string compactTotal = centerVal >= 1_000_000m
+            ? $"{centerVal / 1_000_000m:0.#} M"
+            : centerVal >= 1_000m ? $"{centerVal / 1_000m:0} k" : $"{centerVal:0}";
+        TextRenderer.DrawText(g, compactTotal, Theme.UiFont(9.2F, FontStyle.Bold),
+            new Rectangle(holeX, holeY + holeH / 2 - 15, holeW, 17),
+            _hoveredSlice >= 0 ? Theme.GoldHover : Theme.TextPrimary,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
-        TextRenderer.DrawText(g, "FCFA", Theme.UiFont(7F, FontStyle.Bold),
-            new Rectangle(holeX, holeY + hole / 2 + 1, hole, 14), Theme.TextMuted,
+        TextRenderer.DrawText(g, "FCFA", Theme.UiFont(6.8F, FontStyle.Bold),
+            new Rectangle(holeX, holeY + holeH / 2 + 1, holeW, 13), Theme.TextMuted,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
 
-        // Légende responsive : nom tronqué proprement (EndEllipsis) + pourcentage aligné à droite
-        int legX = donutX + diameter + 16;
+        // Légende responsive interactive : surlignage or au survol + pourcentage aligné à droite
+        int legX = donutX + donutW + 18;
         int legRight = panelW - 8;
         int pctW = 48;
         int nameW = Math.Max(60, legRight - legX - 16 - pctW);
@@ -531,15 +660,25 @@ public partial class FrmDashboard : Form
 
         var fName = Theme.UiFont(8.8F, FontStyle.Bold);
         var fPct = Theme.UiFont(8.8F, FontStyle.Bold);
+        _legendHitRects.Clear();
 
         for (int i = 0; i < items.Count; i++)
         {
+            var rowRect = new Rectangle(legX - 4, ly, Math.Max(80, legRight - legX + 4), rowH);
+            _legendHitRects.Add(rowRect);
+            if (i == _hoveredSlice)
+            {
+                using var hp = Theme.CreateRoundedPath(rowRect, 6);
+                g.FillPath(new SolidBrush(Theme.GoldSoftBg), hp);
+            }
+
             using var br = new SolidBrush(palette[i % palette.Length]);
             g.FillEllipse(br, legX, ly + (rowH - 9) / 2, 9, 9);
 
             var pct = Math.Round(items[i].Value / total * 100m, 1);
             TextRenderer.DrawText(g, items[i].Label, fName,
-                new Rectangle(legX + 15, ly, nameW, rowH), Theme.TextPrimary,
+                new Rectangle(legX + 15, ly, nameW, rowH),
+                i == _hoveredSlice ? Theme.GoldHover : Theme.TextPrimary,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
 
             TextRenderer.DrawText(g, $"{pct:0.#}%", fPct,

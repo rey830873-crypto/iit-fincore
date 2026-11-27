@@ -72,12 +72,20 @@ public partial class FrmSplash : Form
         using var borderPen = new Pen(Color.FromArgb(140, Theme.GoldLight), 1.5f);
         g.DrawPath(borderPen, borderPath);
 
+        // Anneaux orbitaux 3D (moitié arrière derrière le logo)
+        var logoCenter = new PointF(Width / 2f, 112f);
+        float orbitAngle = _progress * 0.075f;
+        Theme.Draw3DOrbitalRings(g, logoCenter, 86f, orbitAngle, frontHalf: false);
+
         // Halo doré discret derrière le logo
         using var halo = new SolidBrush(Color.FromArgb(24, Theme.GoldLight));
         g.FillEllipse(halo, (Width - 156) / 2, 34, 156, 156);
 
         // Logo officiel IIT FINCORE
         Theme.DrawRoundedLogo(g, new Rectangle((Width - 130) / 2, 47, 130, 130), 26);
+
+        // Anneaux orbitaux 3D (moitié avant devant le logo)
+        Theme.Draw3DOrbitalRings(g, logoCenter, 86f, orbitAngle, frontHalf: true);
 
         // Titre bi-colore : "IIT FINCORE" parfaitement collé
         var fontBrand = new Font("Segoe UI", 22F, FontStyle.Bold);

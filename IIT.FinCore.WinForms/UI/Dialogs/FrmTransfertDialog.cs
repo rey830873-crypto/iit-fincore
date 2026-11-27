@@ -107,13 +107,13 @@ public partial class FrmTransfertDialog : Form
         try
         {
             _repo.ExecuteTransfert(src.Id, dst.Id, _numMontant.Value, _dtpDate.Value, _txtMotif.Text.Trim(), UserSession.CurrentUser!.Id);
-            MessageBox.Show("Transfert effectué avec succès ! Les deux soldes ont été mis à jour.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show("Transfert effectué avec succès ! Les deux soldes ont été mis à jour.", "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur de transfert", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur de transfert", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

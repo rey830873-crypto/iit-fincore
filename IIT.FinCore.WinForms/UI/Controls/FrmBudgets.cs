@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using System.Drawing;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.Services;
@@ -195,7 +196,7 @@ public partial class FrmBudgets : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -206,7 +207,7 @@ public partial class FrmBudgets : Form
         if (idx < 0 || idx >= _budgetsList.Count) return;
 
         var b = _budgetsList[idx];
-        if (MessageBox.Show($"Supprimer le budget « {b.Intitule} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+        if (FrmMessageBox.Show($"Supprimer le budget « {b.Intitule} » ?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
             return;
 
         _repo.DeleteBudget(b.BudgetId, UserSession.CurrentUser!.Id);

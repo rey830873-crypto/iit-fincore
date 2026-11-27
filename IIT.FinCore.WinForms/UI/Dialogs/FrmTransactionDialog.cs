@@ -391,20 +391,20 @@ public partial class FrmTransactionDialog : Form
         var montant = _numMontantImpute.Value;
         if (montant <= 0)
         {
-            MessageBox.Show("Le montant imputé doit être supérieur à 0.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Le montant imputé doit être supérieur à 0.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         if (_imputations.Any(i => i.CentreAnalytiqueId == centre.Id))
         {
-            MessageBox.Show("Ce centre analytique est déjà présent dans la ventilation.", "Doublon", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Ce centre analytique est déjà présent dans la ventilation.", "Doublon", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         var totalActuel = _imputations.Sum(i => i.MontantImpute);
         if (totalActuel + montant > _numMontant.Value)
         {
-            MessageBox.Show("La somme ventilée ne peut pas dépasser le montant total de l'opération.", "Dépassement", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("La somme ventilée ne peut pas dépasser le montant total de l'opération.", "Dépassement", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -454,12 +454,12 @@ public partial class FrmTransactionDialog : Form
     {
         if (string.IsNullOrWhiteSpace(_txtLibelle.Text))
         {
-            MessageBox.Show("Veuillez saisir un libellé.", "Champ requis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Veuillez saisir un libellé.", "Champ requis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         if (_cboCompte.SelectedItem is not CompteTresorerie compte)
         {
-            MessageBox.Show("Veuillez sélectionner un compte de trésorerie.", "Champ requis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            FrmMessageBox.Show("Veuillez sélectionner un compte de trésorerie.", "Champ requis", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -496,7 +496,7 @@ public partial class FrmTransactionDialog : Form
 
                 if (warnings.Count > 0)
                 {
-                    var confirm = MessageBox.Show(
+                    var confirm = FrmMessageBox.Show(
                         "ALERTE DÉPASSEMENT BUDGÉTAIRE :\n\n" + string.Join("\n", warnings) + "\n\nVoulez-vous tout de même enregistrer cette dépense ?",
                         "Contrôle budgétaire IIT FINCORE",
                         MessageBoxButtons.YesNo,
@@ -527,13 +527,13 @@ public partial class FrmTransactionDialog : Form
                 ? "Dépense enregistrée et soumise au circuit de validation (en attente d'approbation par l'Administrateur)."
                 : "Opération enregistrée et validée avec succès ! Le solde du compte a été mis à jour.";
 
-            MessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FrmMessageBox.Show(msg, "IIT FINCORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Erreur d'enregistrement", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            FrmMessageBox.Show(ex.Message, "Erreur d'enregistrement", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

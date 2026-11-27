@@ -1,3 +1,4 @@
+using IIT.FinCore.WinForms.UI.Dialogs;
 using IIT.FinCore.WinForms.Data;
 using IIT.FinCore.WinForms.UI;
 
@@ -38,7 +39,7 @@ static class Program
         dbInitTask.GetAwaiter().GetResult();
         if (dbStartupError != null)
         {
-            MessageBox.Show(
+            FrmMessageBox.Show(
                 "Impossible de se connecter à la base MySQL 'iit_fincore'.\n" +
                 "Vérifiez que WampServer (MySQL 3306) est bien démarré.\n\nDétail : " + dbStartupError.Message,
                 "IIT FINCORE - Erreur Base de Données",

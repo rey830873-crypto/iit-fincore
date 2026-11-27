@@ -34,6 +34,8 @@ public partial class FrmOnboarding : Form
 
     private bool _dragging;
     private Point _dragStart;
+    private readonly System.Windows.Forms.Timer _flipTimer = new();
+    private float _flipProgress = 1f;
 
     public FrmOnboarding() : this(null) { }
 
@@ -66,7 +68,19 @@ public partial class FrmOnboarding : Form
             else fade.Stop();
         };
         Shown += (_, _) => fade.Start();
-        FormClosed += (_, _) => _currentImage?.Dispose();
+        _flipTimer.Interval = 16;
+        _flipTimer.Tick += (_, _) =>
+        {
+            _flipProgress = Math.Min(1f, _flipProgress + 0.08f);
+            _leftStage.Invalidate(new Rectangle(20, 88, 420, 360));
+            if (_flipProgress >= 1f) _flipTimer.Stop();
+        };
+        FormClosed += (_, _) =>
+        {
+            _flipTimer.Stop();
+            _flipTimer.Dispose();
+            _currentImage?.Dispose();
+        };
     }
 
     private void BuildLayout()
@@ -106,11 +120,17 @@ public partial class FrmOnboarding : Form
             g.DrawString("TRÉSORERIE & ANALYTIQUE", Theme.UiFont(7.2F, FontStyle.Bold),
                 new SolidBrush(Color.FromArgb(180, 202, 230)), 83, 53);
 
-            // Cadre arrondi flottant contenant l'illustration HD de la slide
-            var artRect = new Rectangle(28, 96, 404, 340);
+            // Cadre arrondi flottant avec transition 3D Perspective (bascule + reflet doré)
+            float easeFlip = 1f - MathF.Pow(1f - _flipProgress, 3f);
+            float scaleX = 0.25f + 0.75f * easeFlip;
+            int artW = Math.Max(40, (int)(404 * scaleX));
+            int artH = 340 - (int)((1f - easeFlip) * 18f);
+            int artX = 28 + (404 - artW) / 2;
+            int artY = 96 + (340 - artH) / 2;
+            var artRect = new Rectangle(artX, artY, artW, artH);
             using var artPath = Theme.CreateRoundedPath(artRect, 18);
 
-            // Ombre douce sous l'illustration
+            // Ombre douce 3D sous l'illustration
             using var shPath = Theme.CreateRoundedPath(new Rectangle(artRect.X + 4, artRect.Y + 8, artRect.Width, artRect.Height), 18);
             g.FillPath(new SolidBrush(Color.FromArgb(95, 0, 8, 22)), shPath);
 
@@ -119,6 +139,14 @@ public partial class FrmOnboarding : Form
                 var st = g.Save();
                 g.SetClip(artPath);
                 g.DrawImage(_currentImage, artRect);
+                // Reflet lumineux doré balayant la carte pendant la rotation 3D
+                if (_flipProgress < 1f)
+                {
+                    int sweepX = artRect.X + (int)(artRect.Width * easeFlip) - 55;
+                    var sweepR = new Rectangle(sweepX, artRect.Y, 110, artRect.Height);
+                    using var sheen = new LinearGradientBrush(sweepR, Color.FromArgb(0, Theme.GoldLight), Color.FromArgb(95, Theme.GoldLight), LinearGradientMode.Horizontal);
+                    g.FillRectangle(sheen, sweepR);
+                }
                 g.Restore(st);
             }
             g.DrawPath(new Pen(Color.FromArgb(140, Theme.GoldLight), 1.6f), artPath);
@@ -286,6 +314,8 @@ public partial class FrmOnboarding : Form
         _btnPrev.Visible = idx > 0;
         _btnNext.Text = idx == _slides.Length - 1 ? "Commencer" : "Suivant";
 
+        _flipProgress = 0.05f;
+        _flipTimer.Start();
         _leftStage.Invalidate();
         _dotsPanel.Invalidate();
     }
