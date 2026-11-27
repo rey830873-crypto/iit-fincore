@@ -79,7 +79,7 @@ public partial class FrmTransactions : Form
             btnTrf.Click += (_, _) =>
             {
                 using var dlg = new FrmTransfertDialog();
-                if (dlg.ShowDialog(this) == DialogResult.OK)
+                if (dlg.ShowDialog(TopLevelControl as IWin32Window ?? this) == DialogResult.OK)
                     LoadData();
             };
             row1.Controls.Add(btnTrf);
@@ -180,7 +180,7 @@ public partial class FrmTransactions : Form
 
         var sub = imps.Select(i => (i.CentreLibelle, $"{i.MontantImpute:N0} FCFA", $"{i.Pourcentage:N2} %")).ToList();
         using var dlg = new FrmDetailsDialog("Détails de la transaction", fields, t.JustificatifPath, sub, "Ventilation sur centres analytiques");
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 
     private void PrintSelectedReceiptPdf()
@@ -216,7 +216,7 @@ public partial class FrmTransactions : Form
     private void OpenTrxDialog(string type)
     {
         using var dlg = new FrmTransactionDialog(type);
-        if (dlg.ShowDialog(this) == DialogResult.OK)
+        if (dlg.ShowDialog(TopLevelControl as IWin32Window ?? this) == DialogResult.OK)
             LoadData();
     }
 

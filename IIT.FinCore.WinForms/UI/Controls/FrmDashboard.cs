@@ -486,6 +486,7 @@ public partial class FrmDashboard : Form
 
         int panelW = _donutChartPanel.Width;
         int panelH = _donutChartPanel.Height;
+        if (panelW < 40 || panelH < 40) return;
         int diameter = Math.Clamp(Math.Min(panelH - 16, panelW / 3), 92, 134);
         int donutX = 12;
         int donutY = Math.Max(6, (panelH - diameter) / 2);
@@ -528,8 +529,8 @@ public partial class FrmDashboard : Form
         int rowH = Math.Min(26, Math.Max(20, (panelH - 12) / items.Count));
         int ly = Math.Max(6, (panelH - items.Count * rowH) / 2);
 
-        using var fName = Theme.UiFont(8.8F, FontStyle.Bold);
-        using var fPct = Theme.UiFont(8.8F, FontStyle.Bold);
+        var fName = Theme.UiFont(8.8F, FontStyle.Bold);
+        var fPct = Theme.UiFont(8.8F, FontStyle.Bold);
 
         for (int i = 0; i < items.Count; i++)
         {

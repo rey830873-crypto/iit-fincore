@@ -81,7 +81,7 @@ public partial class FrmValidations : Form
             ["Statut"] = d.Statut,
             ["Décision"] = d.CommentaireDecision ?? "En attente"
         });
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 
     private void LoadData()

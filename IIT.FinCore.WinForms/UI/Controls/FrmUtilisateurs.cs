@@ -204,7 +204,7 @@ public partial class FrmUtilisateurs : Form
             ["Statut"] = u.EstActif ? "Actif" : "Désactivé",
             ["Dernier accès"] = u.DernierAcces?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Jamais connecté"
         });
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 
     private void ToggleSelectedUser()

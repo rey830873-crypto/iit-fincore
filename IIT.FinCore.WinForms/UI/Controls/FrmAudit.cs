@@ -86,6 +86,6 @@ public partial class FrmAudit : Form
             ["Adresse IP"] = j.AdresseIp ?? "-",
             ["Détails"] = j.Details ?? "-"
         });
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 }

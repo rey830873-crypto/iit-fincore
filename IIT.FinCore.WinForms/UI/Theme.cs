@@ -895,6 +895,7 @@ public class ModernInputBox : SmoothPanel
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        if (Width <= 2 || Height <= 2) return;
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -946,6 +947,7 @@ public class OutlineRoundedButton : Button
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        if (Width <= 2 || Height <= 2) return;
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -1019,6 +1021,7 @@ public class GradientGoldButton : Button
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        if (Width <= 2 || Height <= 2) return;
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
 

@@ -183,7 +183,7 @@ public partial class FrmStructures : Form
             ["Recettes validées"] = $"{kpi.TotalRecettes:N0} FCFA",
             ["Dépenses validées"] = $"{kpi.TotalDepenses:N0} FCFA"
         });
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 
     private void SaveStructure()

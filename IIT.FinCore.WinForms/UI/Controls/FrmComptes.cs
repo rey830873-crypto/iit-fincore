@@ -196,7 +196,7 @@ public partial class FrmComptes : Form
             ["Solde actuel"] = $"{c.SoldeActuel:N0} {c.Devise}",
             ["Statut"] = c.EstActif ? "Actif" : "Archivé"
         });
-        dlg.ShowDialog(this);
+        dlg.ShowDialog(TopLevelControl as IWin32Window ?? this);
     }
 
     private void SaveCompte()
