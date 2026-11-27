@@ -721,6 +721,11 @@ public partial class FrmMain : Form, IMessageFilter
         _contentHost.Dock = DockStyle.Fill;
         _contentHost.BackColor = Theme.PageBg;
         _contentHost.Padding = new Padding(24, 18, 24, 18);
+        _contentHost.Resize += (_, _) =>
+        {
+            foreach (Control c in _contentHost.Controls)
+                c.Bounds = _contentHost.DisplayRectangle;
+        };
         var lightBg = Theme.LoadLightBackground();
         if (lightBg != null)
         {
@@ -826,6 +831,8 @@ public partial class FrmMain : Form, IMessageFilter
 
             page.Control.TopLevel = false;
             page.Control.FormBorderStyle = FormBorderStyle.None;
+            page.Control.AutoScaleMode = AutoScaleMode.None;
+            page.Control.AutoSize = false;
             page.Control.Dock = DockStyle.Fill;
             Theme.UpgradeTabControls(page.Control);
             Theme.UpgradeAllTextBoxes(page.Control);
@@ -833,6 +840,7 @@ public partial class FrmMain : Form, IMessageFilter
             Theme.ApplyCrispPixelFonts(page.Control);
             _contentHost.Controls.Add(page.Control);
             page.Control.Show();
+            page.Control.Bounds = _contentHost.DisplayRectangle;
             _viewCache[key] = page;
             created = true;
         }

@@ -85,19 +85,19 @@ public partial class FrmDashboard : Form
         };
         var lblFilter = new Label
         {
-            Text = "Périmètre d'analyse :",
+            Text = "Périmètre :",
             Font = Theme.FontBodyBold,
             ForeColor = Theme.TextPrimary,
             AutoSize = true,
-            Margin = new Padding(2, 7, 10, 0)
+            Margin = new Padding(2, 7, 8, 0)
         };
-        _cboStructure.Width = 300;
+        _cboStructure.Width = 220;
         _cboStructure.DropDownStyle = ComboBoxStyle.DropDownList;
-        _cboStructure.Margin = new Padding(0, 3, 12, 0);
+        _cboStructure.Margin = new Padding(0, 3, 10, 0);
         _cboStructure.SelectedIndexChanged += (_, _) => RefreshData();
 
-        var btnRefresh = Theme.CreateSecondaryButton("Actualiser", 104, 32);
-        btnRefresh.Margin = new Padding(0, 2, 14, 0);
+        var btnRefresh = Theme.CreateSecondaryButton("Actualiser", 94, 32);
+        btnRefresh.Margin = new Padding(0, 2, 10, 0);
         btnRefresh.Click += (_, _) => RefreshData();
 
         var tip = new ToolTip { InitialDelay = 250, AutoPopDelay = 5000 };
@@ -108,9 +108,9 @@ public partial class FrmDashboard : Form
         // Barre d'actions rapides 1-clic pour une prise en main immédiate
         if (UserSession.HasPermission("RECETTE_CREATE") || UserSession.HasPermission("DEPENSE_CREATE"))
         {
-            var btnQuickRec = Theme.CreatePrimaryButton("+ Recette", 104, 32);
+            var btnQuickRec = Theme.CreatePrimaryButton("+ Recette", 94, 32);
             btnQuickRec.BackColor = Theme.SuccessGreen;
-            btnQuickRec.Margin = new Padding(0, 2, 8, 0);
+            btnQuickRec.Margin = new Padding(0, 2, 6, 0);
             btnQuickRec.Click += (_, _) =>
             {
                 using var dlg = new FrmTransactionDialog("RECETTE");
@@ -118,9 +118,9 @@ public partial class FrmDashboard : Form
             };
             tip.SetToolTip(btnQuickRec, "Enregistrer rapidement une recette (Ctrl+N)");
 
-            var btnQuickDep = Theme.CreatePrimaryButton("− Dépense", 108, 32);
+            var btnQuickDep = Theme.CreatePrimaryButton("− Dépense", 96, 32);
             btnQuickDep.BackColor = Theme.DangerRed;
-            btnQuickDep.Margin = new Padding(0, 2, 8, 0);
+            btnQuickDep.Margin = new Padding(0, 2, 6, 0);
             btnQuickDep.Click += (_, _) =>
             {
                 using var dlg = new FrmTransactionDialog("DEPENSE");
@@ -128,8 +128,8 @@ public partial class FrmDashboard : Form
             };
             tip.SetToolTip(btnQuickDep, "Enregistrer rapidement une dépense");
 
-            var btnQuickTrf = Theme.CreateSecondaryButton("Transfert", 96, 32);
-            btnQuickTrf.Margin = new Padding(0, 2, 8, 0);
+            var btnQuickTrf = Theme.CreateSecondaryButton("Transfert", 88, 32);
+            btnQuickTrf.Margin = new Padding(0, 2, 6, 0);
             btnQuickTrf.Click += (_, _) =>
             {
                 using var dlg = new FrmTransfertDialog();
@@ -137,7 +137,7 @@ public partial class FrmDashboard : Form
             };
             tip.SetToolTip(btnQuickTrf, "Transférer des fonds entre deux comptes (Ctrl+T)");
 
-            var btnQuickPdf = Theme.CreateSecondaryButton("Rapports PDF", 114, 32);
+            var btnQuickPdf = Theme.CreateSecondaryButton("Rapports PDF", 106, 32);
             btnQuickPdf.Margin = new Padding(0, 2, 0, 0);
             btnQuickPdf.Click += (_, _) => (TopLevelControl as FrmMain)?.Navigate("rapports");
             tip.SetToolTip(btnQuickPdf, "Générer et imprimer les rapports officiels PDF (Ctrl+4)");
@@ -562,7 +562,7 @@ public partial class FrmDashboard : Form
         if (panelW < 40 || panelH < 40) return;
 
         // Donut 3D incliné en perspective avec extrusion latérale (profondeur 13px) + animation 0->360°
-        int donutW = Math.Clamp(Math.Min(panelH - 12, panelW / 3 + 12), 104, 152);
+        int donutW = Math.Clamp(Math.Min(panelH - 14, panelW / 3), 94, 136);
         int donutH = (int)(donutW * 0.74f);
         int depth3D = 13;
         int donutX = 14;
