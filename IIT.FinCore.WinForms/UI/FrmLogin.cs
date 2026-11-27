@@ -105,27 +105,14 @@ public partial class FrmLogin : Form
             }
         };
 
-        float loginOrbitAngle = 0f;
-        var orbitTimer = new System.Windows.Forms.Timer { Interval = 28 };
-        orbitTimer.Tick += (_, _) =>
-        {
-            loginOrbitAngle += 0.045f;
-            leftInner.Invalidate(new Rectangle(40, 0, 260, 196));
-        };
-        Shown += (_, _) => orbitTimer.Start();
-        FormClosed += (_, _) => { orbitTimer.Stop(); orbitTimer.Dispose(); };
-
         leftInner.Paint += (_, e) =>
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            // Anneaux orbitaux 3D (arrière-plan) + Logo officiel IIT FINCORE + anneaux avant-plan
-            var logoCenter = new PointF(170f, 98f);
-            Theme.Draw3DOrbitalRings(g, logoCenter, 92f, loginOrbitAngle, frontHalf: false);
+            // Logo officiel IIT FINCORE centré
             Theme.DrawRoundedLogo(g, new Rectangle(100, 28, 140, 140), 28);
-            Theme.Draw3DOrbitalRings(g, logoCenter, 92f, loginOrbitAngle, frontHalf: true);
 
             // Titre bi-colore "IIT FINCORE" sans espace parasite
             var fontBrand = Theme.UiFont(21F, FontStyle.Bold);
