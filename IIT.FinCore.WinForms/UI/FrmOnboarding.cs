@@ -62,7 +62,7 @@ public partial class FrmOnboarding : Form
         var fade = new System.Windows.Forms.Timer { Interval = 14 };
         fade.Tick += (_, _) =>
         {
-            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.08);
+            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.25);
             else fade.Stop();
         };
         Shown += (_, _) => fade.Start();
@@ -84,12 +84,11 @@ public partial class FrmOnboarding : Form
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-            // Fond Royal Sapphire HD
+            // Fond Royal Sapphire HD en cache BitBlt
             var navyBg = Theme.LoadNavyBackground();
             if (navyBg != null)
             {
-                g.DrawImage(navyBg, _leftStage.ClientRectangle);
-                g.FillRectangle(new SolidBrush(Color.FromArgb(80, 4, 18, 42)), _leftStage.ClientRectangle);
+                Theme.DrawCachedBackground(g, _leftStage, navyBg, Color.FromArgb(80, 4, 18, 42));
             }
             else
             {
@@ -152,9 +151,7 @@ public partial class FrmOnboarding : Form
             var lightBg = Theme.LoadLightBackground();
             if (lightBg != null)
             {
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.DrawImage(lightBg, _rightPanel.ClientRectangle);
-                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(215, 255, 255, 255)), _rightPanel.ClientRectangle);
+                Theme.DrawCachedBackground(e.Graphics, _rightPanel, lightBg, Color.FromArgb(215, 255, 255, 255));
             }
         };
 

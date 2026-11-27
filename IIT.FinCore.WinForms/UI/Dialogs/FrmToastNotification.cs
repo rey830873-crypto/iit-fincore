@@ -52,7 +52,9 @@ public partial class FrmToastNotification : Form
         Cursor = Cursors.Hand;
 
         var area = Screen.FromControl(owner).WorkingArea;
-        Location = new Point(area.Right - Width - 22, area.Bottom - Height - 22);
+        int targetX = area.Right - Width - 22;
+        int targetY = area.Bottom - Height - 22;
+        Location = new Point(targetX, targetY + 18);
         Theme.ApplyRoundedRegion(this, 14);
 
         Click += (_, _) =>
@@ -63,18 +65,25 @@ public partial class FrmToastNotification : Form
         };
 
         int ticks = 0;
-        _lifeTimer.Interval = 30;
+        const int enterTicks = 10;
+        _lifeTimer.Interval = 18;
         _lifeTimer.Tick += (_, _) =>
         {
             ticks++;
             if (!_fadingOut)
             {
-                if (Opacity < 0.96) Opacity = Math.Min(0.96, Opacity + 0.08);
-                if (ticks >= 150) _fadingOut = true; // ~4.5 secondes
+                if (ticks <= enterTicks)
+                {
+                    float eased = Theme.EaseOutCubic(ticks / (float)enterTicks);
+                    Opacity = 0.96 * eased;
+                    Top = targetY + (int)MathF.Round(18f * (1f - eased));
+                }
+                if (ticks >= 240) _fadingOut = true; // ~4.3 secondes
             }
             else
             {
-                Opacity = Math.Max(0, Opacity - 0.06);
+                Opacity = Math.Max(0, Opacity - 0.08);
+                Top += 1;
                 if (Opacity <= 0.02)
                 {
                     _lifeTimer.Stop();
@@ -83,6 +92,7 @@ public partial class FrmToastNotification : Form
             }
         };
         Shown += (_, _) => _lifeTimer.Start();
+        FormClosed += (_, _) => { _lifeTimer.Stop(); _lifeTimer.Dispose(); };
     }
 
     protected override void OnPaint(PaintEventArgs e)

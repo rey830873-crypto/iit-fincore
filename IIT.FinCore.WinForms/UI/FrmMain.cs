@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Reflection;
 using IIT.FinCore.WinForms.Services;
 using IIT.FinCore.WinForms.UI.Controls;
 using IIT.FinCore.WinForms.UI.Dialogs;
@@ -10,18 +11,30 @@ public partial class FrmMain : Form, IMessageFilter
 {
     public bool RequestedLogout { get; private set; }
 
-    private readonly Panel _sidebar = new();
-    private readonly Panel _topbar = new();
-    private readonly Panel _contentHost = new();
+    private readonly SmoothPanel _sidebar = new();
+    private readonly SmoothPanel _topbar = new();
+    private readonly SmoothPanel _contentHost = new();
+    private Panel _titlePanel = null!;
+    private FlowLayoutPanel _navPanel = null!;
     private readonly Label _lblPageTitle = new();
     private readonly Label _lblPageSubtitle = new();
     private readonly Dictionary<string, Button> _navButtons = new();
+    private readonly Dictionary<string, (string Title, string Subtitle, UserControl Control)> _viewCache = new();
+    private static readonly Dictionary<Type, MethodInfo?> _refreshMethodCache = new();
     private readonly System.Windows.Forms.Timer _idleTimer = new();
     private readonly System.Windows.Forms.Timer _notifTimer = new();
+    private readonly System.Windows.Forms.Timer _navAnimTimer = new();
     private readonly NotificationService _notifService = new();
     private NotifyIcon? _trayIcon;
     private SmoothPanel _notifBadgeBtn = null!;
     private int _unreadNotifCount;
+    private int _notifSyncRunning;
+    private float _navIndicatorY = -1f;
+    private float _navStartY;
+    private float _navTargetY;
+    private float _navAnimProgress = 1f;
+    private int _navAnimStep;
+    private const int NavAnimTotalSteps = 11; // ~175ms à 60 FPS
     private DateTime _lastActivityUtc = DateTime.UtcNow;
     private static readonly TimeSpan InactivityTimeout = TimeSpan.FromMinutes(15);
     private string _currentKey = "dashboard";
@@ -42,13 +55,92 @@ public partial class FrmMain : Form, IMessageFilter
         BackColor = Theme.PageBg;
         DoubleBuffered = true;
         KeyPreview = true;
+        Opacity = 0;
 
         BuildShell();
+        InitNavigationAnimator();
         Theme.ApplyCrispPixelFonts(this);
         Navigate("dashboard");
         StartInactivityGuard();
         StartNotificationGuard();
         KeyDown += HandleGlobalShortcuts;
+
+        var openFade = new System.Windows.Forms.Timer { Interval = 16 };
+        openFade.Tick += (_, _) =>
+        {
+            if (IsDisposed) { openFade.Stop(); openFade.Dispose(); return; }
+            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.18);
+            else { openFade.Stop(); openFade.Dispose(); }
+        };
+        Shown += (_, _) =>
+        {
+            TriggerNavigationAnimation(_currentKey, instant: true);
+            openFade.Start();
+        };
+        FormClosed += (_, _) =>
+        {
+            openFade.Stop();
+            openFade.Dispose();
+            _navAnimTimer.Stop();
+            _navAnimTimer.Dispose();
+        };
+    }
+
+    private void InitNavigationAnimator()
+    {
+        _navAnimTimer.Interval = 16;
+        _navAnimTimer.Tick += (_, _) =>
+        {
+            _navAnimStep++;
+            float raw = Math.Min(1f, _navAnimStep / (float)NavAnimTotalSteps);
+            float eased = Theme.EaseOutCubic(raw);
+            _navAnimProgress = eased;
+
+            _navIndicatorY = _navStartY + (_navTargetY - _navStartY) * eased;
+
+            int slideX = (int)MathF.Round(16f * (1f - eased));
+            if (_titlePanel != null && _titlePanel.Padding.Left != slideX)
+                _titlePanel.Padding = new Padding(slideX, 2, 16, 0);
+
+            _sidebar.Invalidate(new Rectangle(0, 0, 14, _sidebar.Height));
+            _topbar.Invalidate(new Rectangle(0, _topbar.Height - 5, _topbar.Width, 5));
+
+            if (_navAnimStep >= NavAnimTotalSteps)
+            {
+                _navAnimTimer.Stop();
+                _navAnimProgress = 1f;
+                if (_titlePanel != null && _titlePanel.Padding.Left != 0)
+                    _titlePanel.Padding = new Padding(0, 2, 16, 0);
+                _topbar.Invalidate(new Rectangle(0, _topbar.Height - 5, _topbar.Width, 5));
+            }
+        };
+    }
+
+    private void TriggerNavigationAnimation(string key, bool instant)
+    {
+        if (_navButtons.TryGetValue(key, out var activeBtn) && _navPanel != null)
+        {
+            float targetY = _navPanel.Top + activeBtn.Top + (activeBtn.Height - 22f) / 2f;
+            if (instant || _navIndicatorY < 0f)
+            {
+                _navIndicatorY = _navStartY = _navTargetY = targetY;
+                _navAnimProgress = 1f;
+                _sidebar.Invalidate(new Rectangle(0, 0, 14, _sidebar.Height));
+                return;
+            }
+            _navStartY = _navIndicatorY;
+            _navTargetY = targetY;
+        }
+        else if (instant)
+        {
+            return;
+        }
+
+        _navAnimStep = 0;
+        _navAnimProgress = 0f;
+        if (_titlePanel != null)
+            _titlePanel.Padding = new Padding(16, 2, 16, 0);
+        _navAnimTimer.Start();
     }
 
     private void StartNotificationGuard()
@@ -72,35 +164,67 @@ public partial class FrmMain : Form, IMessageFilter
 
         Shown += (_, _) =>
         {
-            _notifService.SyncAutomaticAlerts();
-            RefreshNotificationBadge();
-
-            var unread = _notifService.GetNotificationsForCurrentUser(5).Where(n => !n.EstLue).ToList();
-            if (unread.Count > 0)
+            _ = Task.Run(() =>
             {
-                var top = unread[0];
-                var suffix = unread.Count > 1 ? $" (+{unread.Count - 1} autre(s))" : "";
-                NotifyUser($"{top.Titre}{suffix}", top.Message, top.Niveau);
-            }
+                _notifService.SyncAutomaticAlerts();
+                int count = _notifService.GetUnreadCount();
+                var unread = _notifService.GetNotificationsForCurrentUser(5).Where(n => !n.EstLue).ToList();
+
+                if (IsDisposed || !IsHandleCreated) return;
+                BeginInvoke(() =>
+                {
+                    if (IsDisposed) return;
+                    _unreadNotifCount = count;
+                    _notifBadgeBtn?.Invalidate();
+                    if (unread.Count > 0)
+                    {
+                        var top = unread[0];
+                        var suffix = unread.Count > 1 ? $" (+{unread.Count - 1} autre(s))" : "";
+                        NotifyUser($"{top.Titre}{suffix}", top.Message, top.Niveau);
+                    }
+                });
+            });
         };
 
-        _notifTimer.Interval = 45_000; // Vérifie toutes les 45 secondes
+        _notifTimer.Interval = 45_000; // Vérifie toutes les 45 secondes en arrière-plan (sans bloquer l'UI)
         _notifTimer.Tick += (_, _) =>
         {
+            if (Interlocked.CompareExchange(ref _notifSyncRunning, 1, 0) != 0)
+                return;
+
             int previous = _unreadNotifCount;
-            _notifService.SyncAutomaticAlerts();
-            RefreshNotificationBadge();
-            if (_unreadNotifCount > previous)
+            _ = Task.Run(() =>
             {
-                var latest = _notifService.GetNotificationsForCurrentUser(1).FirstOrDefault();
-                if (latest != null)
-                    NotifyUser(latest.Titre, latest.Message, latest.Niveau);
-            }
+                try
+                {
+                    _notifService.SyncAutomaticAlerts();
+                    int count = _notifService.GetUnreadCount();
+                    var latest = count > previous ? _notifService.GetNotificationsForCurrentUser(1).FirstOrDefault() : null;
+
+                    if (IsDisposed || !IsHandleCreated) return;
+                    BeginInvoke(() =>
+                    {
+                        if (IsDisposed) return;
+                        _unreadNotifCount = count;
+                        _notifBadgeBtn?.Invalidate();
+                        if (latest != null)
+                            NotifyUser(latest.Titre, latest.Message, latest.Niveau);
+                    });
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _notifSyncRunning, 0);
+                }
+            });
         };
         _notifTimer.Start();
         FormClosed += (_, _) =>
         {
             _notifTimer.Stop();
+            foreach (var entry in _viewCache.Values)
+                entry.Control.Dispose();
+            _viewCache.Clear();
+
             if (_trayIcon != null)
             {
                 _trayIcon.Visible = false;
@@ -139,8 +263,17 @@ public partial class FrmMain : Form, IMessageFilter
 
     private void RefreshNotificationBadge()
     {
-        _unreadNotifCount = _notifService.GetUnreadCount();
-        _notifBadgeBtn?.Invalidate();
+        _ = Task.Run(() =>
+        {
+            int count = _notifService.GetUnreadCount();
+            if (IsDisposed || !IsHandleCreated) return;
+            BeginInvoke(() =>
+            {
+                if (IsDisposed) return;
+                _unreadNotifCount = count;
+                _notifBadgeBtn?.Invalidate();
+            });
+        });
     }
 
     private void OpenNotificationCenter()
@@ -232,9 +365,7 @@ public partial class FrmMain : Form, IMessageFilter
             var navyBg = Theme.LoadNavyBackground();
             if (navyBg != null)
             {
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.DrawImage(navyBg, _sidebar.ClientRectangle);
-                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(110, 5, 20, 46)), _sidebar.ClientRectangle);
+                Theme.DrawCachedBackground(e.Graphics, _sidebar, navyBg, Color.FromArgb(110, 5, 20, 46));
             }
             else
             {
@@ -243,6 +374,16 @@ public partial class FrmMain : Form, IMessageFilter
             }
             using var rightEdge = new Pen(Color.FromArgb(45, roleAccent), 1);
             e.Graphics.DrawLine(rightEdge, _sidebar.Width - 1, 0, _sidebar.Width - 1, _sidebar.Height);
+
+            // Indicateur vertical animé glissant le long du menu actif
+            if (_navIndicatorY >= 0f)
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                var pillRect = new Rectangle(5, (int)MathF.Round(_navIndicatorY), 4, 22);
+                using var pillPath = Theme.CreateRoundedPath(pillRect, 2);
+                using var pillBrush = new SolidBrush(roleAccent);
+                e.Graphics.FillPath(pillBrush, pillPath);
+            }
         };
 
         // En-tête de marque + badge d'espace de rôle bien distinct
@@ -289,7 +430,7 @@ public partial class FrmMain : Form, IMessageFilter
             g.DrawLine(sepPen, 16, brandPanel.Height - 1, brandPanel.Width - 16, brandPanel.Height - 1);
         };
 
-        var navPanel = new FlowLayoutPanel
+        _navPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.TopDown,
@@ -298,6 +439,7 @@ public partial class FrmMain : Form, IMessageFilter
             BackColor = Color.Transparent,
             Padding = new Padding(14, 10, 14, 10)
         };
+        var navPanel = _navPanel;
 
         // Navigation épurée sans icônes, structurée par sections lisibles
         var sections = new List<(string SectionTitle, List<(string Key, string Label, bool Visible)> Items)>
@@ -409,14 +551,28 @@ public partial class FrmMain : Form, IMessageFilter
             // Filet supérieur discret de la couleur du rôle
             using var topAccent = new SolidBrush(roleAccent);
             e.Graphics.FillRectangle(topAccent, 0, 0, _topbar.Width, 3);
+
+            // Ruban de transition animé lors du changement de module
+            if (_navAnimProgress > 0f && _navAnimProgress < 1f)
+            {
+                int sweepW = Math.Max(24, (int)MathF.Round(_topbar.Width * _navAnimProgress));
+                int alpha = Math.Clamp((int)MathF.Round(230f * (1f - _navAnimProgress * 0.65f)), 40, 230);
+                using var sweepBrush = new LinearGradientBrush(
+                    new Rectangle(0, _topbar.Height - 3, sweepW, 3),
+                    Color.FromArgb(alpha / 3, roleAccent),
+                    Color.FromArgb(alpha, roleAccent),
+                    LinearGradientMode.Horizontal);
+                e.Graphics.FillRectangle(sweepBrush, 0, _topbar.Height - 3, sweepW, 3);
+            }
         };
 
-        var titlePanel = new Panel
+        _titlePanel = new Panel
         {
             Dock = DockStyle.Fill,
             BackColor = Color.Transparent,
             Padding = new Padding(0, 2, 16, 0)
         };
+        var titlePanel = _titlePanel;
 
         _lblPageTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
         _lblPageTitle.ForeColor = Theme.TextPrimary;
@@ -561,15 +717,14 @@ public partial class FrmMain : Form, IMessageFilter
         _topbar.Controls.Add(titlePanel);
         _topbar.Controls.Add(rightBar);
 
-        // ==================== ZONE CENTRALE AVEC FOND D'ARRIÈRE-PLAN HD ====================
+        // ==================== ZONE CENTRALE AVEC FOND D'ARRIÈRE-PLAN HD EN CACHE BITBLT ====================
         _contentHost.Dock = DockStyle.Fill;
         _contentHost.BackColor = Theme.PageBg;
         _contentHost.Padding = new Padding(24, 18, 24, 18);
         var lightBg = Theme.LoadLightBackground();
         if (lightBg != null)
         {
-            _contentHost.BackgroundImage = lightBg;
-            _contentHost.BackgroundImageLayout = ImageLayout.Stretch;
+            _contentHost.Paint += (_, e) => Theme.DrawCachedBackground(e.Graphics, _contentHost, lightBg);
         }
 
         var rightContainer = new Panel { Dock = DockStyle.Fill };
@@ -621,59 +776,101 @@ public partial class FrmMain : Form, IMessageFilter
 
     public void Navigate(string key)
     {
+        bool isSamePage = key == _currentKey && _viewCache.ContainsKey(key);
         _currentKey = key;
         var roleAccent = GetRoleAccentColor();
 
         foreach (var (k, btn) in _navButtons)
         {
             bool active = k == key;
-            btn.BackColor = active ? roleAccent : Color.Transparent;
-            btn.ForeColor = active ? (UserSession.IsAdmin ? Theme.TextPrimary : Color.White) : Color.FromArgb(220, 232, 248);
-            btn.Font = Theme.UiFont(9.6F, FontStyle.Bold);
+            var targetBg = active ? roleAccent : Color.Transparent;
+            var targetFg = active ? (UserSession.IsAdmin ? Theme.TextPrimary : Color.White) : Color.FromArgb(220, 232, 248);
+            if (btn.BackColor != targetBg) btn.BackColor = targetBg;
+            if (btn.ForeColor != targetFg) btn.ForeColor = targetFg;
         }
 
         _contentHost.SuspendLayout();
-        _contentHost.Controls.Clear();
 
-        string dashTitle = UserSession.IsAdmin
-            ? "Tableau de bord - Administration globale"
-            : UserSession.IsTresorier
-                ? $"Tableau de bord - {UserSession.CurrentUser?.StructureNom}"
-                : "Tableau de bord - Consultation financière";
-
-        string dashSub = UserSession.IsAdmin
-            ? "Vue consolidée multi-structures et pilotage financier IIT FINCORE"
-            : UserSession.IsTresorier
-                ? "Suivi opérationnel de votre trésorerie, comptes et imputations analytiques"
-                : "Consultation en lecture seule des indicateurs et synthèses financières";
-
-        (string Title, string Subtitle, UserControl Control) page = key switch
+        bool created = false;
+        if (!_viewCache.TryGetValue(key, out var page))
         {
-            "dashboard"    => (dashTitle, dashSub, new UcDashboard()),
-            "pilotage"     => ("Prévisions Cash-Flow & Clôture", "Projection de trésorerie à 6 mois, charges récurrentes et clôture d'exercice", new UcPilotageAvance()),
-            "structures"   => ("Structures", "Associations, clubs et entités rattachées", new UcStructures()),
-            "comptes"      => ("Comptes de trésorerie", UserSession.IsConsultant ? "Consultation des soldes en lecture seule" : "Banques, caisses et comptes Mobile Money", new UcComptes()),
-            "transactions" => ("Mouvements de trésorerie", UserSession.IsConsultant ? "Journal des opérations en lecture seule" : "Recettes, dépenses multi-ventilées et transferts entre comptes", new UcTransactions()),
-            "centres"      => ("Centres d'imputation analytiques", "Répartition des recettes et dépenses par projet / activité", new UcCentresAnalytiques()),
-            "budgets"      => ("Budgets & Suivi budgétaire", "Enveloppes prévisionnelles et taux d'exécution", new UcBudgets()),
-            "validations"  => (UserSession.IsAdmin ? "Approbation des demandes" : "Mes demandes de validation", UserSession.IsAdmin ? "Validez ou rejetez les dépenses soumises par les trésoriers" : "Suivi de vos dépenses soumises à validation", new UcValidations()),
-            "cotisations"  => ("Cotisations", "Campagnes, règlements des membres et suivi des impayés", new UcCotisations()),
-            "rapports"     => ("Rapports & Exportation", "Synthèse financière, recettes, dépenses et export CSV", new UcRapports()),
-            "utilisateurs" => ("Utilisateurs, Rôles & Permissions", "Gestion des accès Administrateur, Trésorier et Consultant", new UcUtilisateurs()),
-            "audit"        => ("Journal des activités (Audit)", "Traçabilité complète des actions effectuées", new UcAudit()),
-            "parametres"   => (UserSession.IsAdmin ? "Profil & Paramètres généraux" : "Mon Profil", "Informations personnelles et sécurité du compte", new UcParametres()),
-            _              => (dashTitle, dashSub, new UcDashboard())
-        };
+            string dashTitle = UserSession.IsAdmin
+                ? "Tableau de bord - Administration globale"
+                : UserSession.IsTresorier
+                    ? $"Tableau de bord - {UserSession.CurrentUser?.StructureNom}"
+                    : "Tableau de bord - Consultation financière";
+
+            string dashSub = UserSession.IsAdmin
+                ? "Vue consolidée multi-structures et pilotage financier IIT FINCORE"
+                : UserSession.IsTresorier
+                    ? "Suivi opérationnel de votre trésorerie, comptes et imputations analytiques"
+                    : "Consultation en lecture seule des indicateurs et synthèses financières";
+
+            page = key switch
+            {
+                "dashboard"    => (dashTitle, dashSub, new UcDashboard()),
+                "pilotage"     => ("Prévisions Cash-Flow & Clôture", "Projection de trésorerie à 6 mois, charges récurrentes et clôture d'exercice", new UcPilotageAvance()),
+                "structures"   => ("Structures", "Associations, clubs et entités rattachées", new UcStructures()),
+                "comptes"      => ("Comptes de trésorerie", UserSession.IsConsultant ? "Consultation des soldes en lecture seule" : "Banques, caisses et comptes Mobile Money", new UcComptes()),
+                "transactions" => ("Mouvements de trésorerie", UserSession.IsConsultant ? "Journal des opérations en lecture seule" : "Recettes, dépenses multi-ventilées et transferts entre comptes", new UcTransactions()),
+                "centres"      => ("Centres d'imputation analytiques", "Répartition des recettes et dépenses par projet / activité", new UcCentresAnalytiques()),
+                "budgets"      => ("Budgets & Suivi budgétaire", "Enveloppes prévisionnelles et taux d'exécution", new UcBudgets()),
+                "validations"  => (UserSession.IsAdmin ? "Approbation des demandes" : "Mes demandes de validation", UserSession.IsAdmin ? "Validez ou rejetez les dépenses soumises par les trésoriers" : "Suivi de vos dépenses soumises à validation", new UcValidations()),
+                "cotisations"  => ("Cotisations", "Campagnes, règlements des membres et suivi des impayés", new UcCotisations()),
+                "rapports"     => ("Rapports & Exportation", "Synthèse financière, recettes, dépenses et export CSV", new UcRapports()),
+                "utilisateurs" => ("Utilisateurs, Rôles & Permissions", "Gestion des accès Administrateur, Trésorier et Consultant", new UcUtilisateurs()),
+                "audit"        => ("Journal des activités (Audit)", "Traçabilité complète des actions effectuées", new UcAudit()),
+                "parametres"   => (UserSession.IsAdmin ? "Profil & Paramètres généraux" : "Mon Profil", "Informations personnelles et sécurité du compte", new UcParametres()),
+                _              => (dashTitle, dashSub, new UcDashboard())
+            };
+
+            page.Control.Dock = DockStyle.Fill;
+            Theme.UpgradeTabControls(page.Control);
+            Theme.UpgradeAllTextBoxes(page.Control);
+            Theme.MakeLayoutContainersTransparent(page.Control);
+            Theme.ApplyCrispPixelFonts(page.Control);
+            _contentHost.Controls.Add(page.Control);
+            _viewCache[key] = page;
+            created = true;
+        }
 
         _lblPageTitle.Text = page.Title;
         _lblPageSubtitle.Text = page.Subtitle;
-        page.Control.Dock = DockStyle.Fill;
-        Theme.UpgradeTabControls(page.Control);
-        Theme.UpgradeAllTextBoxes(page.Control);
-        Theme.MakeLayoutContainersTransparent(page.Control);
-        Theme.ApplyCrispPixelFonts(page.Control);
-        _contentHost.Controls.Add(page.Control);
-        _contentHost.ResumeLayout();
+
+        foreach (Control c in _contentHost.Controls)
+            c.Visible = c == page.Control;
+
+        page.Control.BringToFront();
+        _contentHost.ResumeLayout(true);
+
+        TriggerNavigationAnimation(key, instant: !IsHandleCreated);
+
+        // Si la vue était déjà en cache, rafraîchit uniquement ses données (sans recréer aucun contrôle UI)
+        if (!created || isSamePage)
+            RefreshCachedViewData(page.Control);
+
         RefreshNotificationBadge();
+    }
+
+    private static void RefreshCachedViewData(UserControl control)
+    {
+        var type = control.GetType();
+        if (!_refreshMethodCache.TryGetValue(type, out var method))
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            method = type.GetMethod("RefreshData", flags, Type.EmptyTypes)
+                  ?? type.GetMethod("LoadData", flags, Type.EmptyTypes)
+                  ?? type.GetMethod("LoadAll", flags, Type.EmptyTypes);
+            _refreshMethodCache[type] = method;
+        }
+
+        try
+        {
+            method?.Invoke(control, null);
+        }
+        catch
+        {
+            // Ignore les erreurs ponctuelles lors du rafraîchissement d'une vue en cache
+        }
     }
 }

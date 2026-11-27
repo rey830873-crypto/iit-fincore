@@ -17,6 +17,7 @@ public partial class FrmLogin : Form
     private readonly Label _lblError = new();
     private Button _btnLogin = null!;
     private readonly Button _btnTogglePwd = new();
+    private readonly ToolTip _toolTip = new();
     private readonly List<Button> _rolePills = new();
 
     private Panel _emailBox = null!;
@@ -24,6 +25,7 @@ public partial class FrmLogin : Form
     private bool _emailFocused;
     private bool _pwdFocused;
     private bool _passwordVisible;
+    private bool _togglePwdHovered;
 
     private Point _dragStart;
     private bool _dragging;
@@ -48,10 +50,10 @@ public partial class FrmLogin : Form
         Theme.ApplyCrispPixelFonts(this);
         Theme.ApplyRoundedRegion(this, 18);
 
-        var fadeTimer = new System.Windows.Forms.Timer { Interval = 15 };
+        var fadeTimer = new System.Windows.Forms.Timer { Interval = 14 };
         fadeTimer.Tick += (_, _) =>
         {
-            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.08);
+            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.25);
             else fadeTimer.Stop();
         };
         Shown += (_, _) =>
@@ -90,9 +92,7 @@ public partial class FrmLogin : Form
             var navyBg = Theme.LoadNavyBackground();
             if (navyBg != null)
             {
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.DrawImage(navyBg, leftPanel.ClientRectangle);
-                g.FillRectangle(new SolidBrush(Color.FromArgb(85, 5, 20, 46)), leftPanel.ClientRectangle);
+                Theme.DrawCachedBackground(g, leftPanel, navyBg, Color.FromArgb(85, 5, 20, 46));
             }
             else
             {
@@ -220,8 +220,7 @@ public partial class FrmLogin : Form
             var lightBg = Theme.LoadLightBackground();
             if (lightBg != null)
             {
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.DrawImage(lightBg, rightPanel.ClientRectangle);
+                Theme.DrawCachedBackground(e.Graphics, rightPanel, lightBg);
             }
             for (int i = 4; i >= 1; i--)
             {
@@ -281,25 +280,35 @@ public partial class FrmLogin : Form
         _txtPassword.ForeColor = Theme.TextPrimary;
         _txtPassword.BackColor = Color.White;
         _txtPassword.UseSystemPasswordChar = true;
-        _txtPassword.Bounds = new Rectangle(14, 11, 244, 22);
+        _txtPassword.Bounds = new Rectangle(14, 11, 294, 22);
         _txtPassword.PlaceholderText = "Entrez votre mot de passe";
         _txtPassword.GotFocus += (_, _) => { _pwdFocused = true; _pwdBox.Invalidate(); };
         _txtPassword.LostFocus += (_, _) => { _pwdFocused = false; _pwdBox.Invalidate(); };
 
-        _btnTogglePwd.Text = "Afficher";
-        _btnTogglePwd.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
-        _btnTogglePwd.ForeColor = Theme.SidebarNavyLight;
+        _btnTogglePwd.Text = "";
         _btnTogglePwd.BackColor = Color.White;
         _btnTogglePwd.FlatStyle = FlatStyle.Flat;
         _btnTogglePwd.FlatAppearance.BorderSize = 0;
         _btnTogglePwd.FlatAppearance.MouseOverBackColor = Color.FromArgb(244, 247, 252);
+        _btnTogglePwd.FlatAppearance.MouseDownBackColor = Color.FromArgb(234, 240, 249);
         _btnTogglePwd.Cursor = Cursors.Hand;
-        _btnTogglePwd.Bounds = new Rectangle(262, 6, 88, 32);
+        _btnTogglePwd.TabStop = false;
+        _btnTogglePwd.AccessibleName = "Afficher le mot de passe";
+        _btnTogglePwd.Bounds = new Rectangle(314, 6, 36, 32);
+        Theme.ApplyRoundedRegion(_btnTogglePwd, 8);
+        _toolTip.SetToolTip(_btnTogglePwd, "Afficher le mot de passe");
+        Disposed += (_, _) => _toolTip.Dispose();
+        _btnTogglePwd.MouseEnter += (_, _) => { _togglePwdHovered = true; _btnTogglePwd.Invalidate(); };
+        _btnTogglePwd.MouseLeave += (_, _) => { _togglePwdHovered = false; _btnTogglePwd.Invalidate(); };
+        _btnTogglePwd.Paint += (_, e) => DrawEyeIcon(e.Graphics, _btnTogglePwd.ClientRectangle, _passwordVisible, _togglePwdHovered);
         _btnTogglePwd.Click += (_, _) =>
         {
             _passwordVisible = !_passwordVisible;
             _txtPassword.UseSystemPasswordChar = !_passwordVisible;
-            _btnTogglePwd.Text = _passwordVisible ? "Masquer" : "Afficher";
+            var label = _passwordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe";
+            _btnTogglePwd.AccessibleName = label;
+            _toolTip.SetToolTip(_btnTogglePwd, label);
+            _btnTogglePwd.Invalidate();
         };
         _pwdBox.Controls.Add(_txtPassword);
         _pwdBox.Controls.Add(_btnTogglePwd);
@@ -369,6 +378,45 @@ public partial class FrmLogin : Form
         return box;
     }
 
+    private static void DrawEyeIcon(Graphics g, Rectangle bounds, bool passwordVisible, bool hovered)
+    {
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+        float cx = bounds.Width / 2f;
+        float cy = bounds.Height / 2f;
+        var iconColor = hovered ? Theme.SidebarNavyLight : Theme.TextMuted;
+        var bgColor = hovered ? Color.FromArgb(244, 247, 252) : Color.White;
+
+        using var pen = new Pen(iconColor, 1.75f)
+        {
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round,
+            LineJoin = LineJoin.Round
+        };
+
+        // Contour de l'œil (courbes de Bézier symétriques)
+        using var eyePath = new GraphicsPath();
+        eyePath.AddBezier(cx - 9f, cy, cx - 4.5f, cy - 7.2f, cx + 4.5f, cy - 7.2f, cx + 9f, cy);
+        eyePath.AddBezier(cx + 9f, cy, cx + 4.5f, cy + 7.2f, cx - 4.5f, cy + 7.2f, cx - 9f, cy);
+        g.DrawPath(pen, eyePath);
+
+        // Pupille centrale
+        g.DrawEllipse(pen, cx - 2.7f, cy - 2.7f, 5.4f, 5.4f);
+
+        // Barre diagonale lorsque le mot de passe est visible (clic pour masquer)
+        if (passwordVisible)
+        {
+            using var haloPen = new Pen(bgColor, 3.6f)
+            {
+                StartCap = LineCap.Round,
+                EndCap = LineCap.Round
+            };
+            g.DrawLine(haloPen, cx - 7.2f, cy - 6.8f, cx + 7.2f, cy + 6.8f);
+            g.DrawLine(pen, cx - 7.2f, cy - 6.8f, cx + 7.2f, cy + 6.8f);
+        }
+    }
+
     private void SelectRolePill(Button selected)
     {
         foreach (var p in _rolePills)
@@ -399,16 +447,20 @@ public partial class FrmLogin : Form
         ctrl.MouseUp += (_, _) => _dragging = false;
     }
 
-    private void DoLogin()
+    private async void DoLogin()
     {
         _lblError.Text = "";
         _btnLogin.Enabled = false;
         _btnLogin.Text = "Connexion en cours...";
-        Application.DoEvents();
+
+        var email = _txtEmail.Text;
+        var pwd = _txtPassword.Text;
 
         try
         {
-            var (user, perms, errMsg) = _authRepo.Authenticate(_txtEmail.Text, _txtPassword.Text);
+            var (user, perms, errMsg) = await Task.Run(() => _authRepo.Authenticate(email, pwd));
+            if (IsDisposed) return;
+
             if (user == null)
             {
                 _lblError.Text = errMsg ?? "Identifiants invalides ou compte désactivé.";
@@ -422,13 +474,17 @@ public partial class FrmLogin : Form
         }
         catch (Exception ex)
         {
+            if (IsDisposed) return;
             _lblError.Text = "Erreur MySQL : " + ex.Message;
             ShakeForm();
         }
         finally
         {
-            _btnLogin.Enabled = true;
-            _btnLogin.Text = "Se connecter";
+            if (!IsDisposed)
+            {
+                _btnLogin.Enabled = true;
+                _btnLogin.Text = "Se connecter";
+            }
         }
     }
 
@@ -436,10 +492,18 @@ public partial class FrmLogin : Form
     {
         var orig = Location;
         int[] offsets = { -8, 8, -6, 6, -3, 3, 0 };
-        foreach (var dx in offsets)
+        int step = 0;
+        var t = new System.Windows.Forms.Timer { Interval = 16 };
+        t.Tick += (_, _) =>
         {
-            Location = new Point(orig.X + dx, orig.Y);
-            Thread.Sleep(18);
-        }
+            if (IsDisposed || step >= offsets.Length)
+            {
+                t.Stop();
+                t.Dispose();
+                return;
+            }
+            Location = new Point(orig.X + offsets[step++], orig.Y);
+        };
+        t.Start();
     }
 }

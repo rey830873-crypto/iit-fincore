@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Reflection;
 
 namespace IIT.FinCore.WinForms.UI;
 
@@ -27,8 +29,60 @@ public static class Theme
     public static readonly Color SuccessGreen = Color.FromArgb(16, 152, 104);      // #109868
     public static readonly Color DangerRed = Color.FromArgb(217, 68, 82);          // #D94452
 
+    private static readonly ConcurrentDictionary<(float, FontStyle), Font> _fontCache = new();
+    private static readonly PropertyInfo? _dgvDoubleBufferedProp =
+        typeof(DataGridView).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly Dictionary<(Image, int, int, int), Bitmap> _scaledBgCache = new();
+    private static readonly object _scaledBgLock = new();
+
     public static Font UiFont(float ptSize, FontStyle style = FontStyle.Regular) =>
-        new("Segoe UI", ptSize * 96f / 72f, style, GraphicsUnit.Pixel);
+        _fontCache.GetOrAdd((ptSize, style), static k =>
+            new Font("Segoe UI", k.Item1 * 96f / 72f, k.Item2, GraphicsUnit.Pixel));
+
+    /// <summary>
+    /// Dessine une image de fond pré-redimensionnée et mise en cache à la taille exacte du contrôle
+    /// (avec filtre d'assombrissement optionnel déjà appliqué) pour un rendu BitBlt instantané.
+    /// </summary>
+    public static void DrawCachedBackground(Graphics g, Control ctrl, Image? source, Color? overlayColor = null)
+    {
+        int w = ctrl.ClientSize.Width;
+        int h = ctrl.ClientSize.Height;
+        if (source == null || w <= 0 || h <= 0) return;
+
+        int overlayArgb = overlayColor?.ToArgb() ?? 0;
+        var key = (source, w, h, overlayArgb);
+        Bitmap? cached;
+
+        lock (_scaledBgLock)
+        {
+            if (!_scaledBgCache.TryGetValue(key, out cached))
+            {
+                // Limite la taille du cache mémoire (évite l'accumulation lors des redimensionnements continus)
+                if (_scaledBgCache.Count >= 12)
+                {
+                    foreach (var bmp in _scaledBgCache.Values)
+                        bmp.Dispose();
+                    _scaledBgCache.Clear();
+                }
+
+                cached = new Bitmap(w, h, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                using (var bg = Graphics.FromImage(cached))
+                {
+                    bg.CompositingQuality = CompositingQuality.HighSpeed;
+                    bg.InterpolationMode = InterpolationMode.Bilinear;
+                    bg.DrawImage(source, 0, 0, w, h);
+                    if (overlayColor.HasValue)
+                    {
+                        using var ov = new SolidBrush(overlayColor.Value);
+                        bg.FillRectangle(ov, 0, 0, w, h);
+                    }
+                }
+                _scaledBgCache[key] = cached;
+            }
+        }
+
+        g.DrawImageUnscaled(cached, 0, 0);
+    }
 
     public static readonly Font FontTitle = UiFont(17.5F, FontStyle.Bold);
     public static readonly Font FontSubtitle = UiFont(9.5F, FontStyle.Regular);
@@ -199,7 +253,9 @@ public static class Theme
         {
             if (control.Width <= 0 || control.Height <= 0) return;
             using var path = CreateRoundedPath(new Rectangle(0, 0, control.Width, control.Height), radius);
+            var oldRegion = control.Region;
             control.Region = new Region(path);
+            oldRegion?.Dispose();
         }
         UpdateRegion();
         control.Resize += (_, _) => UpdateRegion();
@@ -253,6 +309,9 @@ public static class Theme
             EnableHeadersVisualStyles = false,
             RowTemplate = { Height = 38 }
         };
+
+        // Active le double-buffering natif pour un défilement 60+ FPS fluide sans scintillement
+        _dgvDoubleBufferedProp?.SetValue(grid, true);
 
         grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(247, 249, 252);
         grid.ColumnHeadersDefaultCellStyle.ForeColor = TextPrimary;
@@ -428,8 +487,16 @@ public static class Theme
         }
     }
 
+    public static float EaseOutCubic(float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        float inv = 1f - t;
+        return 1f - inv * inv * inv;
+    }
+
     /// <summary>
-    /// Remplace tous les TabControl Windows classiques par une barre d'onglets moderne (pilules arrondies Bleu Saphir & Or).
+    /// Remplace tous les TabControl Windows classiques par une barre d'onglets moderne (pilules arrondies Bleu Saphir & Or)
+    /// avec indicateur doré coulissant animé à 60 FPS.
     /// </summary>
     public static void UpgradeTabControls(Control root)
     {
@@ -441,17 +508,45 @@ public static class Theme
                 int idx = root.Controls.GetChildIndex(tc);
                 var host = new Panel { Dock = tc.Dock, Bounds = tc.Bounds, BackColor = PageBg };
 
+                float indicatorX = 0f, indicatorW = 0f;
+                float startX = 0f, startW = 0f, targetX = 0f, targetW = 0f;
+                int animStep = 0;
+                const int animTotalSteps = 10; // ~160ms à 60 FPS
+                var animTimer = new System.Windows.Forms.Timer { Interval = 16 };
+
                 var tabBar = new SmoothPanel
                 {
                     Dock = DockStyle.Top,
-                    Height = 50,
+                    Height = 52,
                     BackColor = PageBg,
-                    Padding = new Padding(0, 2, 0, 10)
+                    Padding = new Padding(0, 2, 0, 12)
                 };
                 tabBar.Paint += (_, e) =>
                 {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
                     using var pen = new Pen(BorderColor, 1);
-                    e.Graphics.DrawLine(pen, 0, tabBar.Height - 1, tabBar.Width, tabBar.Height - 1);
+                    g.DrawLine(pen, 0, tabBar.Height - 1, tabBar.Width, tabBar.Height - 1);
+
+                    if (indicatorW > 2f)
+                    {
+                        var barRect = new Rectangle((int)MathF.Round(indicatorX), tabBar.Height - 4, Math.Max(8, (int)MathF.Round(indicatorW)), 3);
+                        using var barPath = CreateRoundedPath(barRect, 2);
+                        using var barBrush = new LinearGradientBrush(barRect, GoldLight, GoldAccent, LinearGradientMode.Horizontal);
+                        g.FillPath(barBrush, barPath);
+                    }
+                };
+                tabBar.Disposed += (_, _) => { animTimer.Stop(); animTimer.Dispose(); };
+
+                animTimer.Tick += (_, _) =>
+                {
+                    animStep++;
+                    float p = EaseOutCubic(animStep / (float)animTotalSteps);
+                    indicatorX = startX + (targetX - startX) * p;
+                    indicatorW = startW + (targetW - startW) * p;
+                    tabBar.Invalidate();
+                    if (animStep >= animTotalSteps)
+                        animTimer.Stop();
                 };
 
                 var pillFlow = new FlowLayoutPanel
@@ -467,8 +562,29 @@ public static class Theme
                 var pages = new List<Panel>();
                 var buttons = new List<Button>();
 
-                void SelectTab(int activeIndex)
+                void AnimateIndicatorTo(Button activeBtn, bool instant)
                 {
+                    float tx = activeBtn.Left + pillFlow.Left;
+                    float tw = activeBtn.Width;
+                    if (instant || indicatorW <= 0f)
+                    {
+                        animTimer.Stop();
+                        indicatorX = tx;
+                        indicatorW = tw;
+                        tabBar.Invalidate();
+                        return;
+                    }
+                    startX = indicatorX;
+                    startW = indicatorW;
+                    targetX = tx;
+                    targetW = tw;
+                    animStep = 0;
+                    animTimer.Start();
+                }
+
+                void SelectTab(int activeIndex, bool instant = false)
+                {
+                    pageHost.SuspendLayout();
                     for (int i = 0; i < pages.Count; i++)
                     {
                         bool active = i == activeIndex;
@@ -477,6 +593,9 @@ public static class Theme
                         buttons[i].ForeColor = active ? GoldLight : TextMuted;
                         buttons[i].Font = UiFont(9.5F, active ? FontStyle.Bold : FontStyle.Regular);
                     }
+                    pageHost.ResumeLayout(true);
+                    if (activeIndex >= 0 && activeIndex < buttons.Count)
+                        AnimateIndicatorTo(buttons[activeIndex], instant);
                 }
 
                 for (int i = 0; i < tc.TabPages.Count; i++)
@@ -493,7 +612,7 @@ public static class Theme
                     pageHost.Controls.Add(pagePanel);
 
                     int tabIndex = i;
-                    var textW = TextRenderer.MeasureText(tp.Text, new Font("Segoe UI", 9.5F, FontStyle.Bold)).Width;
+                    var textW = TextRenderer.MeasureText(tp.Text, UiFont(9.5F, FontStyle.Bold)).Width;
                     var btn = new Button
                     {
                         Text = tp.Text,
@@ -512,7 +631,12 @@ public static class Theme
                     pillFlow.Controls.Add(btn);
                 }
 
-                SelectTab(0);
+                SelectTab(0, instant: true);
+                pillFlow.Layout += (_, _) =>
+                {
+                    if (indicatorW <= 0f && buttons.Count > 0)
+                        AnimateIndicatorTo(buttons[0], instant: true);
+                };
                 host.Controls.Add(pageHost);
                 host.Controls.Add(tabBar);
 
@@ -535,9 +659,7 @@ public static class Theme
             var navyBg = LoadNavyBackground();
             if (navyBg != null)
             {
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                e.Graphics.DrawImage(navyBg, header.ClientRectangle);
-                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(95, 5, 20, 46)), header.ClientRectangle);
+                DrawCachedBackground(e.Graphics, header, navyBg, Color.FromArgb(95, 5, 20, 46));
             }
             else
             {
@@ -594,6 +716,16 @@ public static class Theme
         };
 
         form.Icon = LoadAppIcon();
+        form.Opacity = 0;
+        var fadeTimer = new System.Windows.Forms.Timer { Interval = 16 };
+        fadeTimer.Tick += (_, _) =>
+        {
+            if (form.IsDisposed) { fadeTimer.Stop(); fadeTimer.Dispose(); return; }
+            if (form.Opacity < 1) form.Opacity = Math.Min(1, form.Opacity + 0.18);
+            else { fadeTimer.Stop(); fadeTimer.Dispose(); }
+        };
+        form.Shown += (_, _) => fadeTimer.Start();
+        form.FormClosed += (_, _) => { fadeTimer.Stop(); fadeTimer.Dispose(); };
         form.Load += (_, _) =>
         {
             UpgradeAllTextBoxes(form);

@@ -28,11 +28,11 @@ public partial class FrmSplash : Form
 
         Theme.ApplyRoundedRegion(this, 18);
 
-        _timer.Interval = 25;
+        _timer.Interval = 16;
         _timer.Tick += (_, _) =>
         {
-            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.08);
-            _progress = Math.Min(100f, _progress + 2.5f);
+            if (Opacity < 1) Opacity = Math.Min(1, Opacity + 0.25);
+            _progress = Math.Min(100f, _progress + 8f);
 
             if (_progress > 35 && _progress < 75)
                 _statusText = "Connexion sécurisée à la base MySQL...";
@@ -55,13 +55,11 @@ public partial class FrmSplash : Form
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
 
-        // Fond HD Royal Sapphire & Or (fallback dégradé si absent)
+        // Fond HD Royal Sapphire & Or pré-redimensionné en cache (BitBlt instantané)
         var bgImg = Theme.LoadNavyBackground();
         if (bgImg != null)
         {
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.DrawImage(bgImg, ClientRectangle);
-            g.FillRectangle(new SolidBrush(Color.FromArgb(70, 4, 18, 42)), ClientRectangle);
+            Theme.DrawCachedBackground(g, this, bgImg, Color.FromArgb(70, 4, 18, 42));
         }
         else
         {

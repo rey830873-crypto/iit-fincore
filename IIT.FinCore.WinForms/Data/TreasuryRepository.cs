@@ -15,36 +15,21 @@ public class TreasuryRepository
         using var conn = DatabaseConfig.CreateConnection();
         conn.Open();
 
-        var soldeGlobal = conn.ExecuteScalar<decimal>(@"
-            SELECT COALESCE(SUM(solde_actuel), 0)
-            FROM comptes_tresorerie
-            WHERE est_actif = 1 AND (@Sid IS NULL OR structure_id = @Sid);",
+        return conn.QuerySingle<DashboardKpi>(@"
+            SELECT
+                (SELECT COALESCE(SUM(solde_actuel), 0)
+                 FROM comptes_tresorerie
+                 WHERE est_actif = 1 AND (@Sid IS NULL OR structure_id = @Sid)) AS SoldeGlobal,
+                (SELECT COALESCE(SUM(montant), 0)
+                 FROM transactions
+                 WHERE type_transaction = 'RECETTE' AND statut = 'VALIDEE'
+                   AND (@Sid IS NULL OR structure_id = @Sid)) AS TotalRecettes,
+                (SELECT COALESCE(SUM(montant), 0)
+                 FROM transactions
+                 WHERE type_transaction = 'DEPENSE' AND statut = 'VALIDEE'
+                   AND (@Sid IS NULL OR structure_id = @Sid)) AS TotalDepenses,
+                (SELECT COUNT(*) FROM structures WHERE est_actif = 1) AS StructuresActives;",
             new { Sid = structureId });
-
-        var recettes = conn.ExecuteScalar<decimal>(@"
-            SELECT COALESCE(SUM(montant), 0)
-            FROM transactions
-            WHERE type_transaction = 'RECETTE' AND statut = 'VALIDEE'
-              AND (@Sid IS NULL OR structure_id = @Sid);",
-            new { Sid = structureId });
-
-        var depenses = conn.ExecuteScalar<decimal>(@"
-            SELECT COALESCE(SUM(montant), 0)
-            FROM transactions
-            WHERE type_transaction = 'DEPENSE' AND statut = 'VALIDEE'
-              AND (@Sid IS NULL OR structure_id = @Sid);",
-            new { Sid = structureId });
-
-        var structuresActives = conn.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM structures WHERE est_actif = 1;");
-
-        return new DashboardKpi
-        {
-            SoldeGlobal = soldeGlobal,
-            TotalRecettes = recettes,
-            TotalDepenses = depenses,
-            StructuresActives = structuresActives
-        };
     }
 
     // ==================== STRUCTURES ====================

@@ -16,20 +16,20 @@ public class AuthRepository
         using var conn = DatabaseConfig.CreateConnection();
         conn.Open();
 
-        var defaults = new Dictionary<string, string>
+        var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["admin@iit.ci"] = "admin123",
             ["tresorier@iit.ci"] = "tresorier123",
             ["consultant@iit.ci"] = "consultant123"
         };
 
-        foreach (var (email, plain) in defaults)
-        {
-            var currentHash = conn.ExecuteScalar<string?>(
-                "SELECT mot_de_passe_hash FROM utilisateurs WHERE email = @Email",
-                new { Email = email });
+        var rows = conn.Query<(string Email, string? Hash)>(
+            "SELECT email AS Email, mot_de_passe_hash AS Hash FROM utilisateurs WHERE email IN @Emails;",
+            new { Emails = defaults.Keys.ToArray() });
 
-            if (currentHash != null && currentHash.Contains("PLACEHOLDER_HASH"))
+        foreach (var (email, currentHash) in rows)
+        {
+            if (currentHash != null && currentHash.Contains("PLACEHOLDER_HASH") && defaults.TryGetValue(email, out var plain))
             {
                 var realHash = BCrypt.Net.BCrypt.HashPassword(plain);
                 conn.Execute(
@@ -168,44 +168,53 @@ public class AuthRepository
         return true;
     }
 
+    private static string? _cachedLocalIp;
+
     public void LogActivity(int? userId, string action, string module, string? entity = null, int? entityId = null, string? details = null)
     {
-        try
+        var ip = GetLocalIpAddress();
+        _ = Task.Run(() =>
         {
-            using var conn = DatabaseConfig.CreateConnection();
-            conn.Open();
-            conn.Execute(@"
-                INSERT INTO journal_activites (utilisateur_id, action, module, entite_cible, entite_id, details, adresse_ip)
-                VALUES (@UserId, @Action, @Module, @Entity, @EntityId, @Details, @Ip);",
-                new
-                {
-                    UserId = userId,
-                    Action = action,
-                    Module = module,
-                    Entity = entity,
-                    EntityId = entityId,
-                    Details = details,
-                    Ip = GetLocalIpAddress()
-                });
-        }
-        catch
-        {
-            // Ne bloque jamais l'action métier si l'audit échoue
-        }
+            try
+            {
+                using var conn = DatabaseConfig.CreateConnection();
+                conn.Open();
+                conn.Execute(@"
+                    INSERT INTO journal_activites (utilisateur_id, action, module, entite_cible, entite_id, details, adresse_ip)
+                    VALUES (@UserId, @Action, @Module, @Entity, @EntityId, @Details, @Ip);",
+                    new
+                    {
+                        UserId = userId,
+                        Action = action,
+                        Module = module,
+                        Entity = entity,
+                        EntityId = entityId,
+                        Details = details,
+                        Ip = ip
+                    });
+            }
+            catch
+            {
+                // Ne bloque jamais l'action métier si l'audit échoue
+            }
+        });
     }
 
     private static string GetLocalIpAddress()
     {
+        if (_cachedLocalIp != null)
+            return _cachedLocalIp;
+
         try
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
             {
                 if (ip.AddressFamily == AddressFamily.InterNetwork)
-                    return ip.ToString();
+                    return _cachedLocalIp = ip.ToString();
             }
         }
         catch { }
-        return "127.0.0.1";
+        return _cachedLocalIp = "127.0.0.1";
     }
 }

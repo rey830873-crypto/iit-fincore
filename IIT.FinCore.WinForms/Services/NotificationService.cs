@@ -15,9 +15,11 @@ public record NotificationPreferences(bool ToastEnabled, bool SoundEnabled, deci
 public class NotificationService
 {
     private readonly TreasuryRepository _repo = new();
+    private static volatile bool _schemaEnsured;
 
     public void EnsureSchema()
     {
+        if (_schemaEnsured) return;
         using var conn = DatabaseConfig.CreateConnection();
         conn.Execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -36,6 +38,7 @@ public class NotificationService
                 INDEX idx_notif_cle (cle_unique)
             ) ENGINE=InnoDB;
             """);
+        _schemaEnsured = true;
     }
 
     public NotificationPreferences GetPreferences()
@@ -89,13 +92,33 @@ public class NotificationService
             var today = DateTime.Today.ToString("yyyyMMdd");
             var prefs = GetPreferences();
 
+            using var conn = DatabaseConfig.CreateConnection();
+            conn.Open();
+
+            // Charge en 1 seule requête toutes les clés déjà générées aujourd'hui (évite N requêtes SELECT COUNT)
+            var existingKeys = new HashSet<string>(
+                conn.Query<string>(
+                    "SELECT cle_unique FROM notifications WHERE cle_unique LIKE @pat",
+                    new { pat = $"%_{today}" }),
+                StringComparer.Ordinal);
+
+            void InsertIfMissing(string cleUnique, string roleCible, int? structureId,
+                string niveau, string titre, string message, string moduleCible)
+            {
+                if (!existingKeys.Add(cleUnique)) return;
+                conn.Execute("""
+                    INSERT INTO notifications (role_cible, structure_id, niveau, cle_unique, titre, message, module_cible, est_lue)
+                    VALUES (@role, @sid, @niv, @cle, @titre, @msg, @mod, 0)
+                    """, new { role = roleCible, sid = structureId, niv = niveau, cle = cleUnique, titre, msg = message, mod = moduleCible });
+            }
+
             // 1. Alertes budgétaires (>= 80% et >= 100%)
             var budgets = _repo.GetSuiviBudgetaire();
             foreach (var b in budgets)
             {
                 if (b.TauxExecutionPct >= 100m)
                 {
-                    InsertIfNotExists(
+                    InsertIfMissing(
                         cleUnique: $"BUDGET_OVER_{b.BudgetId}_{today}",
                         roleCible: "ALL",
                         structureId: null,
@@ -106,7 +129,7 @@ public class NotificationService
                 }
                 else if (b.TauxExecutionPct >= 80m)
                 {
-                    InsertIfNotExists(
+                    InsertIfMissing(
                         cleUnique: $"BUDGET_WARN_{b.BudgetId}_{today}",
                         roleCible: "ALL",
                         structureId: null,
@@ -121,7 +144,7 @@ public class NotificationService
             var comptes = _repo.GetComptes();
             foreach (var c in comptes.Where(x => x.EstActif && x.SoldeActuel < prefs.LowBalanceThreshold))
             {
-                InsertIfNotExists(
+                InsertIfMissing(
                     cleUnique: $"LOW_BAL_{c.Id}_{today}",
                     roleCible: "ALL",
                     structureId: c.StructureId,
@@ -138,7 +161,7 @@ public class NotificationService
             {
                 var days = (op.ProchaineEcheance.Date - DateTime.Today).Days;
                 var when = days < 0 ? $"en retard de {-days} j" : (days == 0 ? "aujourd'hui" : $"dans {days} j");
-                InsertIfNotExists(
+                InsertIfMissing(
                     cleUnique: $"REC_DUE_{op.Id}_{today}",
                     roleCible: "ALL",
                     structureId: op.StructureId,
@@ -153,7 +176,7 @@ public class NotificationService
             if (pending.Count > 0)
             {
                 var totalPending = pending.Sum(d => d.Montant);
-                InsertIfNotExists(
+                InsertIfMissing(
                     cleUnique: $"PENDING_VAL_{pending.Count}_{today}",
                     roleCible: "ADMIN",
                     structureId: null,
@@ -163,33 +186,33 @@ public class NotificationService
                     moduleCible: "validations");
             }
 
-            // 5. Cotisations impayées ou partielles
-            using var conn = DatabaseConfig.CreateConnection();
-            var impayes = conn.ExecuteScalar<int>(
-                "SELECT COUNT(*) FROM paiements_cotisations WHERE statut IN ('IMPAYE', 'PARTIEL')");
-            if (impayes > 0)
+            // 5. Cotisations impayées ou partielles + 6. Opérations non rapprochées (1 seule requête combinée)
+            var counts = conn.QuerySingle<(int Impayes, int NonPointees)>("""
+                SELECT
+                    (SELECT COUNT(*) FROM paiements_cotisations WHERE statut IN ('IMPAYE', 'PARTIEL')) AS Impayes,
+                    (SELECT COUNT(*) FROM transactions WHERE statut = 'VALIDEE' AND est_rapprochee = 0) AS NonPointees;
+                """);
+
+            if (counts.Impayes > 0)
             {
-                InsertIfNotExists(
-                    cleUnique: $"COTIS_IMP_{impayes}_{today}",
+                InsertIfMissing(
+                    cleUnique: $"COTIS_IMP_{counts.Impayes}_{today}",
                     roleCible: "ALL",
                     structureId: null,
                     niveau: "INFO",
-                    titre: $"{impayes} cotisation(s) impayée(s) ou partielle(s)",
+                    titre: $"{counts.Impayes} cotisation(s) impayée(s) ou partielle(s)",
                     message: "Des membres restent à relancer. Ouvrez Cotisations pour envoyer des relances PDF ou WhatsApp.",
                     moduleCible: "cotisations");
             }
 
-            // 6. Opérations validées non rapprochées sur relevé bancaire / Mobile Money
-            var nonPointees = conn.ExecuteScalar<int>(
-                "SELECT COUNT(*) FROM transactions WHERE statut = 'VALIDEE' AND est_rapprochee = 0");
-            if (nonPointees > 0)
+            if (counts.NonPointees > 0)
             {
-                InsertIfNotExists(
-                    cleUnique: $"RAPP_PENDING_{nonPointees}_{today}",
+                InsertIfMissing(
+                    cleUnique: $"RAPP_PENDING_{counts.NonPointees}_{today}",
                     roleCible: "ALL",
                     structureId: null,
                     niveau: "INFO",
-                    titre: $"{nonPointees} opération(s) à rapprocher",
+                    titre: $"{counts.NonPointees} opération(s) à rapprocher",
                     message: "Certaines opérations validées ne sont pas encore pointées sur vos relevés bancaires ou Mobile Money.",
                     moduleCible: "transactions");
             }
@@ -222,21 +245,6 @@ public class NotificationService
         {
             // N'interrompt jamais l'opération métier principale
         }
-    }
-
-    private static void InsertIfNotExists(
-        string cleUnique, string roleCible, int? structureId,
-        string niveau, string titre, string message, string moduleCible)
-    {
-        using var conn = DatabaseConfig.CreateConnection();
-        var exists = conn.ExecuteScalar<int>(
-            "SELECT COUNT(*) FROM notifications WHERE cle_unique = @cle", new { cle = cleUnique });
-        if (exists > 0) return;
-
-        conn.Execute("""
-            INSERT INTO notifications (role_cible, structure_id, niveau, cle_unique, titre, message, module_cible, est_lue)
-            VALUES (@role, @sid, @niv, @cle, @titre, @msg, @mod, 0)
-            """, new { role = roleCible, sid = structureId, niv = niveau, cle = cleUnique, titre, msg = message, mod = moduleCible });
     }
 
     public List<NotificationItem> GetNotificationsForCurrentUser(int limit = 40)

@@ -10,6 +10,21 @@ static class Program
     {
         ApplicationConfiguration.Initialize();
 
+        // Préchauffe la connexion MySQL et les mots de passe démo en parallèle pendant le splash screen
+        Exception? dbStartupError = null;
+        var dbInitTask = Task.Run(() =>
+        {
+            try
+            {
+                var auth = new AuthRepository();
+                auth.EnsureDemoPasswordsHashed();
+            }
+            catch (Exception ex)
+            {
+                dbStartupError = ex;
+            }
+        });
+
         using (var splash = new FrmSplash())
         {
             splash.ShowDialog();
@@ -20,16 +35,12 @@ static class Program
             onboarding.ShowDialog();
         }
 
-        try
-        {
-            var auth = new AuthRepository();
-            auth.EnsureDemoPasswordsHashed();
-        }
-        catch (Exception ex)
+        dbInitTask.GetAwaiter().GetResult();
+        if (dbStartupError != null)
         {
             MessageBox.Show(
                 "Impossible de se connecter à la base MySQL 'iit_fincore'.\n" +
-                "Vérifiez que WampServer (MySQL 3306) est bien démarré.\n\nDétail : " + ex.Message,
+                "Vérifiez que WampServer (MySQL 3306) est bien démarré.\n\nDétail : " + dbStartupError.Message,
                 "IIT FINCORE - Erreur Base de Données",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
